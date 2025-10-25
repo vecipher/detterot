@@ -5,15 +5,21 @@
       "name": "Run game (debug)",
       "type": "lldb",
       "request": "launch",
-      "cargo": { "args": ["run", "-p", "game"] },
-      "cwd": "${workspaceFolder}"
+      "program": "${workspaceFolder}/target/debug/game",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "cargo: build game (debug)",
+      "console": "integratedTerminal"
     },
     {
       "name": "Run game (release)",
       "type": "lldb",
       "request": "launch",
-      "cargo": { "args": ["run", "-p", "game", "--release"] },
-      "cwd": "${workspaceFolder}"
+      "program": "${workspaceFolder}/target/release/game",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "cargo: build game (release)",
+      "console": "integratedTerminal"
     }
   ]
 }
