@@ -1,0 +1,35 @@
+use bevy::prelude::*;
+use clap::Parser;
+use repro::{hash_record, Record};
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(long)]
+    replay: String,
+    #[arg(long)]
+    assert_hash: Option<String>,
+}
+
+fn main() {
+    let args = Args::parse();
+    let data = std::fs::read_to_string(&args.replay).expect("record file");
+    let rec: Record = serde_json::from_str(&data).expect("valid record");
+    // For M0 we don't simulate; we just hash the record content.
+    let got = hash_record(&rec);
+    if let Some(expected_path) = args.assert_hash {
+        let expected = std::fs::read_to_string(expected_path)
+            .expect("hash file")
+            .trim()
+            .to_string();
+        if got != expected {
+            eprintln!("hash mismatch:\n got: {got}\n exp: {expected}");
+            std::process::exit(1);
+        }
+    }
+    // Prepare a tiny app to prove headless plugin init works (no renderer).
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    // later: add your gameplay schedules to exercise replay
+    // run one tick to ensure bevy startup executes without errors
+    app.update();
+}

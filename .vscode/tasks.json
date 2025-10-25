@@ -1,0 +1,7 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "cargo: build all", "type": "shell", "command": "cargo build --all -q", "problemMatcher": ["$rustc"] },
+    { "label": "cargo: run game", "type": "shell", "command": "cargo run -p game", "problemMatcher": ["$rustc"] }
+  ]
+}

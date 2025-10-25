@@ -1,0 +1,30 @@
+[workspace]
+members = ["crates/repro", "crates/worldgen", "crates/game", "tools/repro_harness"]
+resolver = "2"
+
+[workspace.dependencies]
+avian3d = { version = "0.4", default-features = false, features = [
+    "3d",
+    "parry-f32",
+    "xpbd_joints",
+    "enhanced-determinism",
+    "debug-plugin",
+    "parallel"
+] }
+bevy = { version = "0.17.2", default-features = false, features = [
+    "bevy_asset",
+    "bevy_scene",
+    "bevy_winit",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_ui_render",
+    "multi_threaded",
+    "png",
+    "x11"
+] }
+bevy_kira_audio = { version = "0.24", default-features = false, features = ["ogg"] }

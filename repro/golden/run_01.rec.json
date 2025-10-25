@@ -1,0 +1,11 @@
+{
+  "world_seed": 42,
+  "link_id": "hubA_hubB",
+  "rulepack": "day_001",
+  "weather": "clear",
+  "rng_salt": 1337,
+  "commands": [
+    { "Spawn": { "kind": "flag", "x": 0.0, "y": 0.0, "z": 0.0 } },
+    { "Meter": { "key": "pp", "value": 12 } }
+  ]
+}

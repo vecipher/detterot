@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run game (debug)",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": { "args": ["run", "-p", "game"] },
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Run game (release)",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": { "args": ["run", "-p", "game", "--release"] },
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
