@@ -1,3 +1,4 @@
+#[cfg(feature = "dev")]
 use avian3d::debug_render::PhysicsDebugPlugin;
 use avian3d::prelude::*;
 use bevy::color::LinearRgba;
