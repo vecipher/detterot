@@ -1,0 +1,9 @@
+[[scene]]
+name = "baseline_city_core"
+world_seed = 42
+camera_path = "paths/city_orbit.json"
+
+[[scene]]
+name = "open_terrain_flyover"
+world_seed = 1337
+camera_path = "paths/terrain_fly.json"
