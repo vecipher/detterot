@@ -8,7 +8,6 @@ avian3d = { version = "0.4", default-features = false, features = [
     "parry-f32",
     "xpbd_joints",
     "enhanced-determinism",
-    "debug-plugin",
     "parallel"
 ] }
 bevy = { version = "0.17.2", default-features = false, features = [

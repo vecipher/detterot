@@ -12,5 +12,9 @@ serde_json = "1"
 toml = "0.8"
 worldgen = { path = "../worldgen" }
 
+[features]
+default = []
+dev = ["avian3d/debug-plugin"]
+
 [dev-dependencies]
 blake3 = "1"

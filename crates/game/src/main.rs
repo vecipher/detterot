@@ -27,7 +27,7 @@ fn main() {
             }),
     );
     app.add_plugins(PhysicsPlugins::default().set(PhysicsInterpolationPlugin::interpolate_all()));
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "dev")]
     {
         app.add_plugins(PhysicsDebugPlugin);
     }

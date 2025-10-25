@@ -4,7 +4,7 @@
     {
       "label": "cargo: build game (debug)",
       "type": "shell",
-      "command": "cargo build -p game",
+      "command": "cargo build -p game --features dev",
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": [
         {
@@ -55,7 +55,7 @@
     {
       "label": "cargo: run game",
       "type": "shell",
-      "command": "cargo run -p game",
+      "command": "cargo run -p game --features dev",
       "problemMatcher": [
         {
           "owner": "rust",
