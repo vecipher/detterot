@@ -18,7 +18,8 @@ struct MsText;
 #[derive(Component)]
 struct EntText;
 
-fn setup_ui(mut cmds: Commands) {
+fn setup_ui(mut cmds: Commands, asset_server: Res<AssetServer>) {
+    let font_handle = asset_server.load("fonts/inter-regular.ttf");
     cmds.spawn((
         Node {
             position_type: PositionType::Absolute,
@@ -32,6 +33,7 @@ fn setup_ui(mut cmds: Commands) {
     ))
     .with_children(|p| {
         let font = TextFont {
+            font: font_handle.clone(),
             font_size: 14.0,
             ..default()
         };
