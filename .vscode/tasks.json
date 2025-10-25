@@ -1,7 +1,81 @@
 {
   "version": "2.0.0",
   "tasks": [
-    { "label": "cargo: build all", "type": "shell", "command": "cargo build --all -q", "problemMatcher": ["$rustc"] },
-    { "label": "cargo: run game", "type": "shell", "command": "cargo run -p game", "problemMatcher": ["$rustc"] }
+    {
+      "label": "cargo: build game (debug)",
+      "type": "shell",
+      "command": "cargo build -p game",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": [
+        {
+          "owner": "rust",
+          "fileLocation": ["relative", "${workspaceFolder}"],
+          "pattern": [
+            {
+              "regexp": "^(error|warning)(\\[(E\\d+)\\])?:\\s+(.*)$",
+              "severity": 1,
+              "code": 3,
+              "message": 4
+            },
+            {
+              "regexp": "^\\s*-->\\s([^:]+):(\\d+):(\\d+)",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "cargo: build game (release)",
+      "type": "shell",
+      "command": "cargo build -p game --release",
+      "problemMatcher": [
+        {
+          "owner": "rust",
+          "fileLocation": ["relative", "${workspaceFolder}"],
+          "pattern": [
+            {
+              "regexp": "^(error|warning)(\\[(E\\d+)\\])?:\\s+(.*)$",
+              "severity": 1,
+              "code": 3,
+              "message": 4
+            },
+            {
+              "regexp": "^\\s*-->\\s([^:]+):(\\d+):(\\d+)",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "cargo: run game",
+      "type": "shell",
+      "command": "cargo run -p game",
+      "problemMatcher": [
+        {
+          "owner": "rust",
+          "fileLocation": ["relative", "${workspaceFolder}"],
+          "pattern": [
+            {
+              "regexp": "^(error|warning)(\\[(E\\d+)\\])?:\\s+(.*)$",
+              "severity": 1,
+              "code": 3,
+              "message": 4
+            },
+            {
+              "regexp": "^\\s*-->\\s([^:]+):(\\d+):(\\d+)",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
   ]
 }
