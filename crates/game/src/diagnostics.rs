@@ -44,15 +44,17 @@ fn setup_ui(mut cmds: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
+type DiagnosticsQueryData = (
+    &'static mut Text,
+    Option<&'static FpsText>,
+    Option<&'static MsText>,
+    Option<&'static EntText>,
+);
+
 fn update_ui(
     diagnostics: Res<DiagnosticsStore>,
     q_count: Query<Entity>,
-    mut readouts: Query<(
-        &mut Text,
-        Option<&FpsText>,
-        Option<&MsText>,
-        Option<&EntText>,
-    )>,
+    mut readouts: Query<DiagnosticsQueryData>,
 ) {
     let fps_label = diagnostics
         .get(&FrameTimeDiagnosticsPlugin::FPS)
