@@ -7,17 +7,13 @@ use bevy::mesh::Mesh;
 use bevy::pbr::{MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
 use bevy_kira_audio::prelude::*;
-use std::path::PathBuf;
 
 mod diagnostics;
 mod perf_scene;
 mod plugins;
 
 fn main() {
-    let asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../assets")
-        .to_string_lossy()
-        .into_owned();
+    let asset_path = resolve_asset_directory();
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
@@ -51,6 +47,33 @@ fn main() {
 }
 
 fn drive_sim() {}
+
+fn resolve_asset_directory() -> String {
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(mut directory) = exe_path.parent() {
+            loop {
+                let candidate = directory.join("assets");
+                if candidate.is_dir() {
+                    return candidate.to_string_lossy().into_owned();
+                }
+
+                match directory.parent() {
+                    Some(parent) => directory = parent,
+                    None => break,
+                }
+            }
+        }
+    }
+
+    if let Ok(current_dir) = std::env::current_dir() {
+        let candidate = current_dir.join("assets");
+        if candidate.is_dir() {
+            return candidate.to_string_lossy().into_owned();
+        }
+    }
+
+    "assets".to_string()
+}
 
 fn spawn_world(
     mut commands: Commands,
