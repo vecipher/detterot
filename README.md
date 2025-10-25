@@ -1,6 +1,6 @@
 # Detterot
 
-![CI](https://github.com/<owner>/detterot/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Vecipher/detterot/actions/workflows/ci.yml/badge.svg)
 
 Foundation for the Detterot prototype. Launch the Bevy game from VS Code (F5) to see a neon cube lit in a simple scene with diagnostics overlay, Avian 3D physics, Kira audio, and automated camera paths. Continuous integration keeps formatting, linting, tests, and determinism checks green on both macOS and Ubuntu.
 
