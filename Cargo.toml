@@ -22,8 +22,10 @@ bevy = { version = "0.17.2", default-features = false, features = [
     "bevy_text",
     "bevy_ui",
     "bevy_ui_render",
+    "tonemapping_luts",
+    "zstd_rust",
     "multi_threaded",
     "png",
     "x11"
 ] }
-bevy_kira_audio = { version = "0.24", default-features = false, features = ["ogg"] }
+bevy_kira_audio = { version = "0.24", default-features = false, features = ["ogg", "wav"] }

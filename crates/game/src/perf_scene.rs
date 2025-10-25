@@ -59,7 +59,20 @@ fn drive_camera_path(
     }
     path.t += time.delta_secs();
     // Simple linear sample between nearest points
-    let (mut a, mut b) = (0, 0);
+    if path.points.len() == 1 {
+        let point = &path.points[0];
+        tf.translation = Vec3::from_array(point.pos);
+        *tf = tf.looking_at(Vec3::from_array(point.look_at), Vec3::Y);
+        return;
+    }
+
+    let last_idx = path.points.len() - 1;
+    let last_t = path.points[last_idx].t;
+    if path.t > last_t {
+        path.t = last_t;
+    }
+
+    let (mut a, mut b) = (last_idx - 1, last_idx);
     for i in 1..path.points.len() {
         if path.t <= path.points[i].t {
             a = i - 1;

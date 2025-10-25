@@ -1,21 +1,28 @@
+use avian3d::prelude::*;
 #[cfg(feature = "dev")]
 use avian3d::debug_render::PhysicsDebugPlugin;
-use avian3d::prelude::*;
 use bevy::color::LinearRgba;
 use bevy::math::primitives::{Cuboid, Sphere};
 use bevy::mesh::Mesh;
 use bevy::pbr::{MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
 use bevy_kira_audio::prelude::*;
+use std::path::PathBuf;
+
 mod diagnostics;
 mod perf_scene;
 mod plugins;
 
 fn main() {
+    let asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../assets")
+        .to_string_lossy()
+        .into_owned();
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
             .set(AssetPlugin {
+                file_path: asset_path,
                 watch_for_changes_override: Some(cfg!(debug_assertions)),
                 ..default()
             })
@@ -80,6 +87,6 @@ fn spawn_world(
 }
 
 fn play_boot_sound(server: Res<AssetServer>, audio: Res<Audio>) {
-    let handle: Handle<AudioSource> = server.load("audio/boot.ogg");
+    let handle: Handle<AudioSource> = server.load("audio/boot.wav");
     audio.play(handle).looped();
 }

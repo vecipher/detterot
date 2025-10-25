@@ -47,25 +47,38 @@ fn setup_ui(mut cmds: Commands, asset_server: Res<AssetServer>) {
 fn update_ui(
     diagnostics: Res<DiagnosticsStore>,
     q_count: Query<Entity>,
-    mut fps: Query<&mut Text, With<FpsText>>,
-    mut ms: Query<&mut Text, With<MsText>>,
-    mut ent: Query<&mut Text, With<EntText>>,
+    mut readouts: Query<(
+        &mut Text,
+        Option<&FpsText>,
+        Option<&MsText>,
+        Option<&EntText>,
+    )>,
 ) {
-    if let Some(d) = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS) {
-        if let Some(avg) = d.smoothed() {
-            if let Ok(mut text) = fps.single_mut() {
-                text.0 = format!("FPS: {:.1}", avg);
+    let fps_label = diagnostics
+        .get(&FrameTimeDiagnosticsPlugin::FPS)
+        .and_then(|d| d.smoothed())
+        .map(|avg| format!("FPS: {:.1}", avg));
+    let ms_label = diagnostics
+        .get(&FrameTimeDiagnosticsPlugin::FRAME_TIME)
+        .and_then(|d| d.smoothed())
+        .map(|avg| format!("CPU ms: {:.2}", avg * 1000.0));
+    let ent_label = format!("Entities: {}", q_count.iter().count());
+
+    for (mut text, is_fps, is_ms, is_ent) in &mut readouts {
+        if is_fps.is_some() {
+            if let Some(label) = fps_label.as_ref() {
+                text.0 = label.clone();
             }
+            continue;
         }
-    }
-    if let Some(d) = diagnostics.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME) {
-        if let Some(avg) = d.smoothed() {
-            if let Ok(mut text) = ms.single_mut() {
-                text.0 = format!("CPU ms: {:.2}", avg * 1000.0);
+        if is_ms.is_some() {
+            if let Some(label) = ms_label.as_ref() {
+                text.0 = label.clone();
             }
+            continue;
         }
-    }
-    if let Ok(mut text) = ent.single_mut() {
-        text.0 = format!("Entities: {}", q_count.iter().count());
+        if is_ent.is_some() {
+            text.0 = ent_label.clone();
+        }
     }
 }
