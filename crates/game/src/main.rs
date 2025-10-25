@@ -1,6 +1,6 @@
-use avian3d::prelude::*;
 #[cfg(feature = "dev")]
 use avian3d::debug_render::PhysicsDebugPlugin;
+use avian3d::prelude::*;
 use bevy::color::LinearRgba;
 use bevy::math::primitives::{Cuboid, Sphere};
 use bevy::mesh::Mesh;
