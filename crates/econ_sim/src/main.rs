@@ -6,8 +6,8 @@ use std::num::ParseIntError;
 use std::path::PathBuf;
 
 use game::systems::economy::{
-    compute_price, load_rulepack, step_economy_day, BasisBp, CommodityId, EconState, EconomyDay,
-    HubId, MoneyCents, Pp, Rulepack,
+    compute_price, load_rulepack, step_economy_day, BasisBp, CommodityId, EconState, EconStepScope,
+    EconomyDay, HubId, MoneyCents, Pp, Rulepack,
 };
 
 const ECON_VERSION: u32 = 1;
@@ -47,7 +47,14 @@ fn run_sim(args: &Args, rp: &Rulepack) -> Result<(), std::io::Error> {
     for day in 0..args.days {
         for (idx, state) in states.iter_mut().enumerate() {
             let hub = HubId((idx as u16) + 1);
-            let delta = step_economy_day(rp, args.world_seed, ECON_VERSION, hub, state);
+            let delta = step_economy_day(
+                rp,
+                args.world_seed,
+                ECON_VERSION,
+                hub,
+                state,
+                EconStepScope::GlobalAndHub,
+            );
             let interest = delta.interest_delta;
             let mut commodities: Vec<_> = state.di_bp.keys().copied().collect();
             commodities.sort_by_key(|c| c.0);

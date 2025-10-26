@@ -36,7 +36,7 @@ pub use rulepack::{
     Rulepack, RulepackError,
 };
 #[allow(unused_imports)]
-pub use state::{step_economy_day, EconDelta, EconState};
+pub use state::{step_economy_day, EconDelta, EconState, EconStepScope};
 #[allow(unused_imports)]
 pub use types::{BasisBp, CommodityId, EconomyDay, HubId, Pp, RouteId, Weather};
 

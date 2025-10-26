@@ -94,51 +94,107 @@ impl RngCursor {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EconStepScope {
+    /// Runs the global economy updates (DI, PP, debt, day counter) and then
+    /// advances the basis for the provided hub.
+    GlobalAndHub,
+    /// Advances the basis for the provided hub without touching the global
+    /// economy state. Use this for additional hubs within the same simulated
+    /// day after [`GlobalAndHub`] has been executed once.
+    HubOnly,
+}
+
 pub fn step_economy_day(
     rp: &Rulepack,
     world_seed: u64,
     econ_version: u32,
     hub: HubId,
     state: &mut EconState,
+
+    scope: EconStepScope,
 ) -> EconDelta {
-    let day = state.day;
+    let day = match scope {
+        EconStepScope::GlobalAndHub => state.day,
+        EconStepScope::HubOnly => EconomyDay(state.day.0.saturating_sub(1)),
+    };
     let mut delta = EconDelta::new(day, hub);
 
-    // 1. DI step
-    let mut di_state = DiState {
-        per_com: state.di_bp.clone(),
-        overlay_bp: state.di_overlay_bp,
-    };
-    let prev_di = di_state.per_com.clone();
-    let mut rng_di = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_DI);
-    step_di(day, &mut di_state, rp, &mut rng_di);
-    state.di_bp = di_state.per_com;
-    state.di_overlay_bp = di_state.overlay_bp;
-    let mut di_entries: Vec<_> = state.di_bp.iter().collect();
-    di_entries.sort_by_key(|(commodity, _)| commodity.0);
-    for (commodity, value) in di_entries {
-        delta.di.push(CommodityDelta {
-            commodity: *commodity,
-            value: *value,
-        });
-        if let Some(previous) = prev_di.get(commodity) {
-            note_clamps(
-                &mut delta.clamps_hit,
-                "di",
-                *commodity,
-                previous,
-                value,
-                rp.di.per_day_clamp_bp,
-                rp.di.absolute_min_bp,
-                rp.di.absolute_max_bp,
-            );
+    if matches!(scope, EconStepScope::GlobalAndHub) {
+        // 1. DI step
+        let mut di_state = DiState {
+            per_com: state.di_bp.clone(),
+            overlay_bp: state.di_overlay_bp,
+        };
+        let prev_di = di_state.per_com.clone();
+        let mut rng_di = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_DI);
+        step_di(day, &mut di_state, rp, &mut rng_di);
+        state.di_bp = di_state.per_com;
+        state.di_overlay_bp = di_state.overlay_bp;
+        let mut di_entries: Vec<_> = state.di_bp.iter().collect();
+        di_entries.sort_by_key(|(commodity, _)| commodity.0);
+        for (commodity, value) in di_entries {
+            delta.di.push(CommodityDelta {
+                commodity: *commodity,
+                value: *value,
+            });
+            if let Some(previous) = prev_di.get(commodity) {
+                note_clamps(
+                    &mut delta.clamps_hit,
+                    "di",
+                    *commodity,
+                    previous,
+                    value,
+                    rp.di.per_day_clamp_bp,
+                    rp.di.absolute_min_bp,
+                    rp.di.absolute_max_bp,
+                );
+            }
+        }
+        delta
+            .rng_cursors
+            .push(RngCursor::new("di", rng_di.cursor()));
+
+        // 2. Planting pull / PP decay
+        delta.pp_before = state.pp;
+        state.pp = apply_planting_pull(state.pp, state, &rp.pp);
+        delta.pp_after = state.pp;
+
+        // 3. Rot -> debt conversion
+        delta.rot_before = state.rot_u16;
+        let (rot_after, debt_delta) = convert_rot_to_debt(state.rot_u16, &rp.rot);
+        state.rot_u16 = rot_after;
+        delta.rot_after = rot_after;
+        delta.debt_before = state.debt_cents;
+        state.debt_cents = state.debt_cents.saturating_add(debt_delta);
+        let (interest_delta, debt_with_interest) =
+            accrue_interest_per_leg(state.debt_cents, &rp.interest);
+        state.debt_cents = debt_with_interest;
+        delta.interest_delta = interest_delta;
+        delta.debt_after = state.debt_cents;
+
+        // 4. Advance day
+        state.day = EconomyDay(state.day.0.saturating_add(1));
+    } else {
+        delta.pp_before = state.pp;
+        delta.pp_after = state.pp;
+        delta.rot_before = state.rot_u16;
+        delta.rot_after = state.rot_u16;
+        delta.debt_before = state.debt_cents;
+        delta.debt_after = state.debt_cents;
+        delta.interest_delta = MoneyCents::ZERO;
+
+        let mut di_entries: Vec<_> = state.di_bp.iter().collect();
+        di_entries.sort_by_key(|(commodity, _)| commodity.0);
+        for (commodity, value) in di_entries {
+            delta.di.push(CommodityDelta {
+                commodity: *commodity,
+                value: *value,
+            });
         }
     }
-    delta
-        .rng_cursors
-        .push(RngCursor::new("di", rng_di.cursor()));
 
-    // 2. Basis updates for this hub
+    // Basis updates for this hub
     let mut commodities: Vec<_> = state.di_bp.keys().copied().collect();
     commodities.sort_by_key(|c| c.0);
     let mut rng_basis = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_BASIS);
@@ -172,28 +228,9 @@ pub fn step_economy_day(
         .rng_cursors
         .push(RngCursor::new("basis", rng_basis.cursor()));
 
-    // 3. Planting pull / PP decay
-    delta.pp_before = state.pp;
-    state.pp = apply_planting_pull(state.pp, state, &rp.pp);
-    delta.pp_after = state.pp;
-
-    // 4. Rot -> debt conversion
-    delta.rot_before = state.rot_u16;
-    let (rot_after, debt_delta) = convert_rot_to_debt(state.rot_u16, &rp.rot);
-    state.rot_u16 = rot_after;
-    delta.rot_after = rot_after;
-    delta.debt_before = state.debt_cents;
-    state.debt_cents = state.debt_cents.saturating_add(debt_delta);
-    let (interest_delta, debt_with_interest) =
-        accrue_interest_per_leg(state.debt_cents, &rp.interest);
-    state.debt_cents = debt_with_interest;
-    delta.interest_delta = interest_delta;
-    delta.debt_after = state.debt_cents;
-
-    // 5. Advance day
-    state.day = EconomyDay(state.day.0.saturating_add(1));
-
-    log::log_econ_tick(&delta);
+    if matches!(scope, EconStepScope::GlobalAndHub) {
+        log::log_econ_tick(&delta);
+    }
 
     delta
 }
