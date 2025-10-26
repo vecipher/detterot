@@ -53,7 +53,8 @@ fn state_step_matches_golden() {
     }
 
     let actual = serde_json::to_string_pretty(&history).expect("serialize");
-    let golden_path = workspace_path("crates/game/src/systems/economy/tests/state_step_golden.json");
+    let golden_path =
+        workspace_path("crates/game/src/systems/economy/tests/state_step_golden.json");
     maybe_update_state_golden(&golden_path, &actual);
     let golden_contents = fs::read_to_string(&golden_path).expect("read golden");
     let golden = golden_contents.trim();
