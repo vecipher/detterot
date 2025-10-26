@@ -120,7 +120,7 @@ pub fn step_economy_day(
     };
     let mut delta = EconDelta::new(day, hub);
 
-    let mut pp_for_basis = state.pp;
+    let pp_for_basis;
 
     if matches!(scope, EconStepScope::GlobalAndHub) {
         // 1. DI step
@@ -158,10 +158,11 @@ pub fn step_economy_day(
             .push(RngCursor::new("di", rng_di.cursor()));
 
         // 2. Planting pull / PP decay
-        delta.pp_before = state.pp;
-        pp_for_basis = state.pp;
-        state.pp = apply_planting_pull(state.pp, state, &rp.pp);
+        let pp_before = state.pp;
+        delta.pp_before = pp_before;
+        state.pp = apply_planting_pull(pp_before, state, &rp.pp);
         delta.pp_after = state.pp;
+        pp_for_basis = pp_before;
 
         // 3. Rot -> debt conversion
         delta.rot_before = state.rot_u16;
