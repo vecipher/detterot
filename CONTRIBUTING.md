@@ -8,3 +8,6 @@
 
 ## Determinism
 - Fixed timestep; DetRng only; stable system sets/order.
+
+## Formatting
+- Run `cargo fmt --all` locally before pushing to avoid CI failures on the formatting check.
