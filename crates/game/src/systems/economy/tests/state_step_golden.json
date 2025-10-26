@@ -47,11 +47,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 172
+        "value": 191
       },
       {
         "commodity": 2,
-        "value": 255
+        "value": 274
       }
     ],
     "basis": [
@@ -89,11 +89,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 241
+        "value": 296
       },
       {
         "commodity": 2,
-        "value": 456
+        "value": 512
       }
     ],
     "basis": [
@@ -131,11 +131,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 283
+        "value": 391
       },
       {
         "commodity": 2,
-        "value": 467
+        "value": 576
       }
     ],
     "basis": [
@@ -173,11 +173,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 327
+        "value": 502
       },
       {
         "commodity": 2,
-        "value": 513
+        "value": 689
       }
     ],
     "basis": [
@@ -215,11 +215,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 401
+        "value": 657
       },
       {
         "commodity": 2,
-        "value": 470
+        "value": 727
       }
     ],
     "basis": [
@@ -257,11 +257,11 @@
     "di": [
       {
         "commodity": 1,
-        "value": 305
+        "value": 655
       },
       {
         "commodity": 2,
-        "value": 370
+        "value": 720
       }
     ],
     "basis": [

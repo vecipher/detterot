@@ -65,14 +65,17 @@ fn advance_value(current: BasisBp, overlay_bp: i32, cfg: &DiCfg, rng: &mut DetRn
 }
 
 fn decay_overlay(state: &mut DiState, cfg: &DiCfg) {
-    let decay = cfg.overlay_decay_bp.max(0);
-    if state.overlay_bp > 0 {
-        state.overlay_bp = (state.overlay_bp - decay).max(0);
-    } else if state.overlay_bp < 0 {
-        state.overlay_bp = (state.overlay_bp + decay).min(0);
-    }
+    let decay_bp = cfg.overlay_decay_bp.clamp(0, 10_000);
+    let retention_bp = 10_000 - decay_bp;
 
-    state.overlay_bp = state
-        .overlay_bp
+    let scaled = if retention_bp == 0 {
+        0
+    } else {
+        let overlay = state.overlay_bp as i64;
+        let retained = overlay * retention_bp as i64 / 10_000;
+        retained as i32
+    };
+
+    state.overlay_bp = scaled
         .clamp(cfg.overlay_min_bp, cfg.overlay_max_bp);
 }

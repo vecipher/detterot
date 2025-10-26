@@ -14,7 +14,10 @@ Foundation for the Detterot prototype. Launch the Bevy game from VS Code (F5) to
 - `cargo fmt`, `cargo clippy -D warnings`, and `cargo test` must pass before merging.
 - `tools/repro_harness` replays golden records and validates hashes for determinism checks.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for etiquette and performance expectations.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for etiquette, performance expectations, and the economy invariants CI enforces.
+
+## Planning docs
+- Track milestone changes in [docs/plan_changelog.md](docs/plan_changelog.md); the latest entry covers the v1.0.2 M1 economy deliverables.
 
 ## Economy goldens
 Economy determinism is guarded by CSV/JSON fixtures under `crates/econ_sim/tests/goldens/` and `crates/game/src/systems/economy/tests/`. Any intentional change to DI, basis, or interest math will move those fixtures. Regenerate them with the helper env var so the updated values are written back in-place:
@@ -24,4 +27,4 @@ UPDATE_ECON_GOLDENS=1 cargo test -p econ-sim micro_sim_generates_golden_csv
 UPDATE_ECON_GOLDENS=1 cargo test -p game state_step_matches_golden
 ```
 
-Both tests now read the golden data at runtime, so re-running them without the env var immediately verifies the refreshed outputs.
+Both tests now read the golden data at runtime, so re-running them without the env var immediately verifies the refreshed outputs. For implementation details, review the economy bullets in [CONTRIBUTING.md](CONTRIBUTING.md) and the CI helpers under `ci/deny_floats.toml` and `ci/grep_banned_random.sh`.
