@@ -179,7 +179,7 @@ pub fn step_economy_day(
         // 4. Advance day
         state.day = EconomyDay(state.day.0.saturating_add(1));
     } else {
-        delta._before = state.pp;
+        delta.pp_before = state.pp;
         delta.pp_after = state.pp;
         delta.rot_before = state.rot_u16;
         delta.rot_after = state.rot_u16;
