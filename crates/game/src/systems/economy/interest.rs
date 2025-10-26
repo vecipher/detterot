@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
-use super::{
-    bankers_round_cents, round_down_to_cents, InterestCfg, MoneyCents,
-};
+use super::{bankers_round_cents, round_down_to_cents, InterestCfg, MoneyCents};
 
 const ONE_Q16: u64 = 1 << 16;
 
@@ -66,9 +64,7 @@ fn apply_basis_points(amount: MoneyCents, bp: i32) -> MoneyCents {
     }
     let base = i128::from(amount.as_i64());
     let multiplier = i128::from(bp);
-    let intermediate = base
-        .saturating_mul(multiplier)
-        .saturating_mul(10);
+    let intermediate = base.saturating_mul(multiplier).saturating_mul(10);
     let milli = intermediate.div_euclid(10_000);
     let rounded = bankers_round_cents(milli);
     round_down_to_cents(i128::from(rounded.as_i64()) * 10)

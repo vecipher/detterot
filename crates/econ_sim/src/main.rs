@@ -11,7 +11,10 @@ use game::systems::economy::{
 };
 
 const ECON_VERSION: u32 = 1;
-const RULEPACK_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/rulepacks/day_001.toml");
+const RULEPACK_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../assets/rulepacks/day_001.toml"
+);
 const BASE_PRICE_CENTS: i64 = 10_000;
 
 fn main() {
@@ -123,7 +126,9 @@ impl Args {
         let mut iter = env::args().skip(1);
         while let Some(arg) = iter.next() {
             match arg.as_str() {
-                "--world-seed" => world_seed = Some(parse_u64(next_value(&mut iter, "--world-seed")?)?),
+                "--world-seed" => {
+                    world_seed = Some(parse_u64(next_value(&mut iter, "--world-seed")?)?)
+                }
                 "--days" => days = Some(parse_u32(next_value(&mut iter, "--days")?)?),
                 "--hubs" => hubs = Some(parse_u16(next_value(&mut iter, "--hubs")?)?),
                 "--pp" => pp = parse_list_u16(next_value(&mut iter, "--pp")?)?,
@@ -163,13 +168,21 @@ fn parse_u16(value: String) -> Result<u16, String> {
 fn parse_list_u16(raw: String) -> Result<Vec<u16>, String> {
     raw.split(',')
         .filter(|s| !s.is_empty())
-        .map(|part| part.replace('_', "").parse::<u16>().map_err(|err| err.to_string()))
+        .map(|part| {
+            part.replace('_', "")
+                .parse::<u16>()
+                .map_err(|err| err.to_string())
+        })
         .collect()
 }
 
 fn parse_list_i64(raw: String) -> Result<Vec<i64>, String> {
     raw.split(',')
         .filter(|s| !s.is_empty())
-        .map(|part| part.replace('_', "").parse::<i64>().map_err(|err| err.to_string()))
+        .map(|part| {
+            part.replace('_', "")
+                .parse::<i64>()
+                .map_err(|err| err.to_string())
+        })
         .collect()
 }

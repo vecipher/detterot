@@ -15,7 +15,9 @@ fn workspace_path(relative: &str) -> PathBuf {
 
 fn cfg() -> crate::systems::economy::PpCfg {
     let path = workspace_path("assets/rulepacks/day_001.toml");
-    load_rulepack(path.to_str().expect("utf-8 path")).expect("rulepack").pp
+    load_rulepack(path.to_str().expect("utf-8 path"))
+        .expect("rulepack")
+        .pp
 }
 
 #[test]

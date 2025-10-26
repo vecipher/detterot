@@ -15,8 +15,7 @@ pub fn convert_rot_to_debt(rot_u16: u16, cfg: &RotCfg) -> (u16, MoneyCents) {
     }
 
     let rot_after = clamped - chunks * cfg.conversion_chunk;
-    let debt_delta = MoneyCents::from_i128_clamped(
-        i128::from(cfg.debt_per_chunk_cents) * i128::from(chunks),
-    );
+    let debt_delta =
+        MoneyCents::from_i128_clamped(i128::from(cfg.debt_per_chunk_cents) * i128::from(chunks));
     (rot_after, debt_delta)
 }

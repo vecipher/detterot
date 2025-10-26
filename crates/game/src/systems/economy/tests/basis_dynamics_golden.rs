@@ -58,7 +58,10 @@ fn stock_driver_is_monotone() {
         closed_routes: 0,
         stock_dev: -500,
     };
-    let drivers_high = BasisDrivers { stock_dev: 500, ..drivers_low };
+    let drivers_high = BasisDrivers {
+        stock_dev: 500,
+        ..drivers_low
+    };
 
     let mut rng_low = seeded_rng(2);
     let mut rng_high = seeded_rng(2);

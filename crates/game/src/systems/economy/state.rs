@@ -132,7 +132,8 @@ pub fn step_economy_day(
             );
         }
     }
-    delta.rng_cursors
+    delta
+        .rng_cursors
         .push(RngCursor::new("di", rng_di.cursor()));
 
     // 2. Basis updates for this hub

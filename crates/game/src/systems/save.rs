@@ -6,8 +6,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
 use crate::systems::economy::state::RngCursor;
+use crate::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
 use crate::systems::migrations::{migrate_to_latest, MigrateError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

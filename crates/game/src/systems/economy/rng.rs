@@ -13,7 +13,13 @@ pub struct DetRng {
 }
 
 impl DetRng {
-    pub fn from_seed(world_seed: u64, econ_version: u32, hub: HubId, day: EconomyDay, tag: u32) -> Self {
+    pub fn from_seed(
+        world_seed: u64,
+        econ_version: u32,
+        hub: HubId,
+        day: EconomyDay,
+        tag: u32,
+    ) -> Self {
         let mut hasher = Hasher::new();
         hasher.update(b"det_rng_v1");
         hasher.update(&world_seed.to_le_bytes());

@@ -26,8 +26,8 @@ pub fn update_basis(
         .norm_bounded_bp(0, cfg.noise_sigma_bp, cfg.noise_clamp_bp)
         .0;
 
-    let mut next = current.0 as i64
-        + (pp_term + weather_term + routes_term + stock_term + noise) as i64;
+    let mut next =
+        current.0 as i64 + (pp_term + weather_term + routes_term + stock_term + noise) as i64;
 
     let delta_cap = cfg.per_day_clamp_bp as i64;
     if delta_cap > 0 {

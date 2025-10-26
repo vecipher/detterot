@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::{round_down_to_cents, bankers_round_cents, BasisBp, MoneyCents};
+use super::{bankers_round_cents, round_down_to_cents, BasisBp, MoneyCents};
 
 const BASIS_SCALE: i64 = 10_000;
 const MILLI_CENT_SCALE: i128 = 10;

@@ -2,8 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{state::EconState, Pp, PpCfg};
 use super::types::HubId;
+use super::{state::EconState, Pp, PpCfg};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PendingPlanting {

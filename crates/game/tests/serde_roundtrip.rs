@@ -1,7 +1,7 @@
-use std::fs;
-use game::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
 use game::systems::economy::state::RngCursor;
+use game::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
 use game::systems::save::{load, save, BasisSave, CommoditySave, InventorySlot, SaveV1};
+use std::fs;
 use tempfile::tempdir;
 
 fn sample_save() -> SaveV1 {

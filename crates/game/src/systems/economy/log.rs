@@ -94,10 +94,8 @@ pub fn log_econ_tick(_delta: &EconDelta) {}
 #[cfg(all(test, feature = "econ_logs"))]
 mod tests {
     use super::*;
-    use crate::systems::economy::{
-        BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, Pp,
-    };
     use crate::systems::economy::state::CommodityDelta;
+    use crate::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, Pp};
     use tempfile::tempdir;
 
     #[test]

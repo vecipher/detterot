@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::systems::economy::{
-    accrue_interest_per_leg, load_rulepack, MoneyCents,
-};
+use crate::systems::economy::{accrue_interest_per_leg, load_rulepack, MoneyCents};
 
 fn workspace_path(relative: &str) -> PathBuf {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -35,7 +33,11 @@ fn interest_is_piecewise_and_caps() {
         deltas.push((debt.as_i64(), delta.as_i64(), next.as_i64()));
     }
 
-    let expected = vec![(10000, 150, 10150), (500000, 7500, 507500), (5000000, 82000, 5082000)];
+    let expected = vec![
+        (10000, 150, 10150),
+        (500000, 7500, 507500),
+        (5000000, 82000, 5082000),
+    ];
     assert_eq!(deltas, expected);
 
     let high_debt = MoneyCents(2_000_000_000);
