@@ -199,7 +199,7 @@ pub fn step_economy_day(
     commodities.sort_by_key(|c| c.0);
     let mut rng_basis = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_BASIS);
     let drivers = BasisDrivers {
-        pp: state.pp,
+        pp: delta.pp_before,
         weather: Weather::Clear,
         closed_routes: 0,
         stock_dev: 0,
