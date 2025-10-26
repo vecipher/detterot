@@ -27,7 +27,8 @@
     "rot_before": 200,
     "rot_after": 0,
     "debt_before": 10000,
-    "debt_after": 20000,
+    "interest_delta": 262,
+    "debt_after": 17762,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -67,8 +68,9 @@
     "pp_after": 5041,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 17762,
+    "interest_delta": 266,
+    "debt_after": 18028,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -108,8 +110,9 @@
     "pp_after": 5048,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 18028,
+    "interest_delta": 270,
+    "debt_after": 18298,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -149,8 +152,9 @@
     "pp_after": 5046,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 18298,
+    "interest_delta": 274,
+    "debt_after": 18572,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -190,8 +194,9 @@
     "pp_after": 5035,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 18572,
+    "interest_delta": 278,
+    "debt_after": 18850,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -231,8 +236,9 @@
     "pp_after": 5015,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 18850,
+    "interest_delta": 283,
+    "debt_after": 19133,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -272,8 +278,9 @@
     "pp_after": 4986,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 20000,
-    "debt_after": 20000,
+    "debt_before": 19133,
+    "interest_delta": 287,
+    "debt_after": 19420,
     "clamps_hit": [],
     "rng_cursors": [
       {
