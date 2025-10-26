@@ -21,6 +21,7 @@ fn sample_save() -> SaveV1 {
                 value: BasisBp(-45),
             },
         ],
+        di_overlay_bp: 120,
         basis: vec![
             BasisSave {
                 hub: HubId(1),

@@ -25,7 +25,7 @@ fn convert_respects_floor_and_chunks() {
     assert_eq!(rot_after, cfg.rot_floor);
     assert_eq!(delta, MoneyCents::ZERO);
 
-    let start = cfg.rot_floor + cfg.conversion_chunk * 3;
+    let start = cfg.rot_floor + cfg.rot_decay_per_day + cfg.conversion_chunk * 3;
     let (rot_after, delta) = convert_rot_to_debt(start, &cfg);
     assert_eq!(rot_after, cfg.rot_floor);
     assert_eq!(delta.as_i64(), i64::from(cfg.debt_per_chunk_cents) * 3);
@@ -40,4 +40,13 @@ fn conversion_is_idempotent_once_drained() {
     let (rot_again, delta_again) = convert_rot_to_debt(rot_after, &cfg);
     assert_eq!(rot_again, rot_after);
     assert_eq!(delta_again, MoneyCents::ZERO);
+}
+
+#[test]
+fn decay_applies_before_conversion() {
+    let cfg = cfg();
+    let start = cfg.rot_floor + cfg.rot_decay_per_day.saturating_sub(1);
+    let (rot_after, delta) = convert_rot_to_debt(start, &cfg);
+    assert_eq!(rot_after, cfg.rot_floor);
+    assert_eq!(delta, MoneyCents::ZERO);
 }

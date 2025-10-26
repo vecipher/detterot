@@ -19,6 +19,8 @@ pub struct SaveV1 {
     pub world_seed: u64,
     pub day: EconomyDay,
     pub di: Vec<CommoditySave>,
+    #[serde(default)]
+    pub di_overlay_bp: i32,
     pub basis: Vec<BasisSave>,
     pub pp: Pp,
     pub rot: u16,
