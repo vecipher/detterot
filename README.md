@@ -27,4 +27,4 @@ UPDATE_ECON_GOLDENS=1 cargo test -p econ-sim micro_sim_generates_golden_csv
 UPDATE_ECON_GOLDENS=1 cargo test -p game state_step_matches_golden
 ```
 
-Both tests now read the golden data at runtime, so re-running them without the env var immediately verifies the refreshed outputs. For implementation details, review the economy bullets in [CONTRIBUTING.md](CONTRIBUTING.md) and the CI helpers under `ci/deny_floats.toml` and `ci/grep_banned_random.sh`.
+Both tests now read the golden data at runtime, so re-running them without the env var immediately verifies the refreshed outputs. For implementation details, review the economy bullets in [CONTRIBUTING.md](CONTRIBUTING.md) and the CI helpers under `ci/.clippy.toml` and `ci/grep_banned_random.sh`.

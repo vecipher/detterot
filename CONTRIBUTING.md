@@ -10,7 +10,7 @@
 - Fixed timestep; DetRng only; stable system sets/order.
 
 ## Economy invariants
-- `crates/game/src/systems/economy/**` must stay free of `f32`/`f64` usage; CI enforces this via `ci/deny_floats.toml`.
+- `crates/game/src/systems/economy/**` must stay free of `f32`/`f64` usage; CI enforces this via the Clippy lint configuration (`crates/game/Cargo.toml` and `ci/.clippy.toml`).
 - Seed all economy simulations through `DetRng`; CI's `ci/grep_banned_random.sh` blocks `thread_rng`/`rand::random` in that tree.
 - Breaking either rule fails the `Economy invariants` job in the main workflow alongside the determinism checks.
 

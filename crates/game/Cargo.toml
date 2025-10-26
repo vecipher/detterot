@@ -24,3 +24,6 @@ econ_logs = []
 
 [dev-dependencies]
 tempfile = "3"
+
+[lints.clippy]
+float_arithmetic = "deny"
