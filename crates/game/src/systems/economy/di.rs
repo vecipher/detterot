@@ -76,6 +76,5 @@ fn decay_overlay(state: &mut DiState, cfg: &DiCfg) {
         retained as i32
     };
 
-    state.overlay_bp = scaled
-        .clamp(cfg.overlay_min_bp, cfg.overlay_max_bp);
+    state.overlay_bp = scaled.clamp(cfg.overlay_min_bp, cfg.overlay_max_bp);
 }
