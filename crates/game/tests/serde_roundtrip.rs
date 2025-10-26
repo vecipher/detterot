@@ -1,5 +1,7 @@
 use game::systems::economy::state::RngCursor;
-use game::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
+use game::systems::economy::{
+    BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, PendingPlanting, Pp,
+};
 use game::systems::save::{load, save, BasisSave, CommoditySave, InventorySlot, SaveV1};
 use std::fs;
 use tempfile::tempdir;
@@ -33,6 +35,7 @@ fn sample_save() -> SaveV1 {
         ],
         pp: Pp(5_100),
         rot: 12,
+        debt_cents: MoneyCents(4_200),
         inventory: vec![InventorySlot {
             commodity: CommodityId(9),
             amount: 33,

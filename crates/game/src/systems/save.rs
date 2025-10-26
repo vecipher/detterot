@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::systems::economy::state::RngCursor;
-use crate::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, PendingPlanting, Pp};
+use crate::systems::economy::{
+    BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, PendingPlanting, Pp,
+};
 use crate::systems::migrations::{migrate_to_latest, MigrateError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,6 +22,8 @@ pub struct SaveV1 {
     pub basis: Vec<BasisSave>,
     pub pp: Pp,
     pub rot: u16,
+    #[serde(default)]
+    pub debt_cents: MoneyCents,
     pub inventory: Vec<InventorySlot>,
     pub pending_planting: Vec<PendingPlanting>,
     pub rng_cursors: Vec<RngCursor>,

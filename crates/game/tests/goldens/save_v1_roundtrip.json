@@ -26,6 +26,7 @@
   ],
   "pp": 5100,
   "rot": 12,
+  "debt_cents": 4200,
   "inventory": [
     {
       "commodity": 9,
