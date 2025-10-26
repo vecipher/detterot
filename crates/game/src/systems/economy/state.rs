@@ -18,6 +18,7 @@ use super::planting::PendingPlanting;
 
 const RNG_TAG_DI: u32 = 0;
 const RNG_TAG_BASIS: u32 = 1;
+const GLOBAL_DI_HUB_ID: HubId = HubId(u16::MAX);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EconState {
@@ -129,7 +130,13 @@ pub fn step_economy_day(
             overlay_bp: state.di_overlay_bp,
         };
         let prev_di = di_state.per_com.clone();
-        let mut rng_di = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_DI);
+        let mut rng_di = DetRng::from_seed(
+            world_seed,
+            econ_version,
+            GLOBAL_DI_HUB_ID,
+            day,
+            RNG_TAG_DI,
+        );
         step_di(day, &mut di_state, rp, &mut rng_di);
         state.di_bp = di_state.per_com;
         state.di_overlay_bp = di_state.overlay_bp;
