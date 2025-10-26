@@ -28,7 +28,7 @@ fn convert_respects_floor_and_chunks() {
     let start = cfg.rot_floor + cfg.rot_decay_per_day + cfg.conversion_chunk * 3;
     let (rot_after, delta) = convert_rot_to_debt(start, &cfg);
     assert_eq!(rot_after, cfg.rot_floor);
-    assert_eq!(delta.as_i64(), i64::from(cfg.debt_per_chunk_cents) * 3);
+    assert_eq!(delta.as_i64(), cfg.debt_per_chunk_cents * 3);
 }
 
 #[test]

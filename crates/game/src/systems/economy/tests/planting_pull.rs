@@ -23,8 +23,10 @@ fn cfg() -> crate::systems::economy::PpCfg {
 #[test]
 fn planting_pull_decays_over_time() {
     let cfg = cfg();
-    let mut state = EconState::default();
-    state.pp = Pp(cfg.neutral_pp);
+    let mut state = EconState {
+        pp: Pp(cfg.neutral_pp),
+        ..Default::default()
+    };
     schedule_planting(
         PendingPlanting {
             hub: HubId(1),
@@ -49,8 +51,10 @@ fn planting_pull_decays_over_time() {
 #[test]
 fn multiple_plantings_clamp_and_clear() {
     let cfg = cfg();
-    let mut state = EconState::default();
-    state.pp = Pp(cfg.max_pp - 50);
+    let mut state = EconState {
+        pp: Pp(cfg.max_pp - 50),
+        ..Default::default()
+    };
     for size in [5, 8, 12] {
         schedule_planting(
             PendingPlanting {
