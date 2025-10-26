@@ -187,15 +187,6 @@ pub fn step_economy_day(
         delta.debt_after = state.debt_cents;
         delta.interest_delta = MoneyCents::ZERO;
         pp_for_basis = state.pp;
-
-        let mut di_entries: Vec<_> = state.di_bp.iter().collect();
-        di_entries.sort_by_key(|(commodity, _)| commodity.0);
-        for (commodity, value) in di_entries {
-            delta.di.push(CommodityDelta {
-                commodity: *commodity,
-                value: *value,
-            });
-        }
     }
 
     // Basis updates for this hub
