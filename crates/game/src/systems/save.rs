@@ -70,7 +70,10 @@ pub fn save(path: &Path, snapshot: &SaveV1) -> Result<(), SaveError> {
         .basis
         .sort_by(|a, b| (a.hub.0, a.commodity.0).cmp(&(b.hub.0, b.commodity.0)));
     normalized.inventory.sort_by_key(|slot| slot.commodity.0);
-    let json = serde_json::to_string_pretty(&normalized)?;
+    let mut json = serde_json::to_string_pretty(&normalized)?;
+    if !json.ends_with('\n') {
+        json.push('\n');
+    }
     if let Some(parent) = path.parent() {
         if !parent.as_os_str().is_empty() {
             fs::create_dir_all(parent)?;
