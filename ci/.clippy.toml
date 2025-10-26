@@ -1,0 +1,3 @@
+# Placeholder Clippy config for the economy audit job.
+# Float arithmetic is denied via the `lints.clippy` table in `crates/game/Cargo.toml`,
+# so we do not need extra per-job overrides here today.

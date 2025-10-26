@@ -11,6 +11,7 @@ use bevy_kira_audio::prelude::*;
 mod diagnostics;
 mod perf_scene;
 mod plugins;
+mod systems;
 
 fn main() {
     let asset_path = resolve_asset_directory();

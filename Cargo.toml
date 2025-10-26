@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/repro", "crates/worldgen", "crates/game", "tools/repro_harness"]
+members = ["crates/repro", "crates/worldgen", "crates/game", "crates/econ_sim", "tools/repro_harness"]
 resolver = "2"
 
 [workspace.dependencies]

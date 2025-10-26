@@ -1,0 +1,100 @@
+# Daily Index (DI) controls the global price level anchor.
+[di]
+# Equilibrium DI value in bp (0 = par, positive tilts prices higher).
+long_run_mean_bp = 75
+# Carryover of yesterday's DI reading (bp; 10_000 = 100% retention).
+retention_bp = 9200
+# Random DI noise sigma (bp) before clamping.
+noise_sigma_bp = 60
+# Clamp for a sampled noise shock (bp).
+noise_clamp_bp = 180
+# Maximum allowed DI movement per day after all adjustments (bp).
+per_day_clamp_bp = 240
+# Hard DI bounds (bp) to avoid runaway swings.
+absolute_min_bp = -1500
+absolute_max_bp = 1500
+# Overlay adjustment decay toward zero each day (bp of remaining overlay).
+overlay_decay_bp = 20
+# Overlay bounds (bp) for temporary scripted pushes.
+overlay_min_bp = -400
+overlay_max_bp = 400
+
+# Basis spread reacts to player power, routes, stock, and weather.
+[basis]
+# Sensitivity of basis spread to PP (bp per 100 PP from neutral).
+beta_pp_bp = 4
+# Sensitivity to number of active trade routes (bp per route).
+beta_routes_bp = 30
+# Sensitivity to warehouse stock percentage (bp per % stock).
+beta_stock_bp = 3
+# Random basis noise sigma (bp) before clamping.
+noise_sigma_bp = 45
+# Clamp for sampled basis noise (bp).
+noise_clamp_bp = 150
+# Maximum basis movement per day after dynamics (bp).
+per_day_clamp_bp = 360
+# Hard basis bounds (bp).
+absolute_min_bp = -2500
+absolute_max_bp = 2500
+
+# Weather overlays shift the basis additively by condition (bp).
+[basis.weather]
+# Clear forecast baseline.
+clear_bp = 0
+# Rainy weather discount.
+rains_bp = -35
+# Fog penalty.
+fog_bp = -20
+# Windy premium.
+windy_bp = 15
+
+# Installment interest leg pricing.
+[interest]
+# Flat spread added to every loan leg (bp).
+base_leg_bp = 150
+# Linear spread per `linear_scale_cents` of principal (bp step).
+linear_leg_bp = 25
+# Notional (cents) required to earn one linear step of spread.
+linear_scale_cents = 10_000_000
+# Convex spread per leg before gamma scaling (bp).
+convex_leg_bp = 40
+# Gamma (Q16) scaling for convex spread ramp.
+convex_gamma_q16 = 98_304
+# Cap on total spread per leg (bp).
+per_leg_cap_bp = 1_200
+
+# Rotation (ROT) tracking converts surplus effort into debt relief.
+[rot]
+# Minimum stored ROT after decay (raw units).
+rot_floor = 0
+# Maximum stored ROT before accumulation is clamped.
+rot_ceiling = 4000
+# Passive ROT loss per day (raw units).
+rot_decay_per_day = 50
+# ROT consumed each time we convert to debt relief.
+conversion_chunk = 25
+# Debt forgiveness per conversion chunk (cents).
+debt_per_chunk_cents = 1_250
+
+# Player Power (PP) clamps and dynamics.
+[pp]
+# Minimum/maximum PP clamps for player progression.
+min_pp = 1000
+max_pp = 10000
+# Neutral PP target where economy balances supply/demand.
+neutral_pp = 5000
+# PP gained per unit of planting size (bp per 100 PP).
+planting_size_to_pp_bp = 250
+# Oldest planting (days) that still influences PP pulls.
+planting_max_age_days = 28
+# Passive PP decay toward neutral each day (bp of gap).
+decay_per_day_bp = 150
+# Strength of pull toward neutral PP (bp per day of gap).
+pull_strength_bp = 600
+# Daily decay on pull strength (bp).
+pull_decay_bp = 50
+
+# Bounds on price multipliers applied to quotes (bp).
+[pricing]
+min_multiplier_bp = -3000
+max_multiplier_bp = 4000
