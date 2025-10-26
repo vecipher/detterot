@@ -1,0 +1,10 @@
+[profile.dev]
+split-debuginfo = "packed"
+debug = 1
+# incremental = false
+
+[profile.release]
+debug = 0
+lto = "thin"
+codegen-units = 1
+split-debuginfo = "packed"

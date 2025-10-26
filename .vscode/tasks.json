@@ -76,6 +76,22 @@
           ]
         }
       ]
+    },
+    {
+      "label": "cargo: clean",
+      "type": "shell",
+      "command": "cargo clean",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "repo: size snapshot",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "set -o pipefail; du -sh target .git 2>/dev/null; printf '\\nLargest dSYM bundles (top 10):\\n'; find target -maxdepth 5 -type d -name '*.dSYM' -print0 2>/dev/null | xargs -0 du -sh 2>/dev/null | sort -hr | head -n 10"
+      ],
+      "presentation": { "reveal": "always", "panel": "shared" }
     }
   ]
 }
