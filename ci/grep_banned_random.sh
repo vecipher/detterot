@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-target_dir="src/systems/economy"
+target_dir="crates/game/src/systems/economy"
 if [ ! -d "$target_dir" ]; then
   echo "missing $target_dir" >&2
   exit 1
