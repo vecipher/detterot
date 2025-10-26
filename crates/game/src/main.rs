@@ -9,6 +9,7 @@ use bevy::prelude::*;
 use bevy_kira_audio::prelude::*;
 
 mod diagnostics;
+mod systems;
 mod perf_scene;
 mod plugins;
 

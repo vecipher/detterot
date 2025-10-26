@@ -1,0 +1,56 @@
+[di]
+long_run_mean_bp = 75
+retention_bp = 9200
+noise_sigma_bp = 60
+noise_clamp_bp = 180
+per_day_clamp_bp = 240
+absolute_min_bp = -1500
+absolute_max_bp = 1500
+overlay_decay_bp = 20
+overlay_min_bp = -400
+overlay_max_bp = 400
+
+[basis]
+beta_pp_bp = 4
+beta_routes_bp = 30
+beta_stock_bp = 3
+noise_sigma_bp = 45
+noise_clamp_bp = 150
+per_day_clamp_bp = 360
+absolute_min_bp = -2500
+absolute_max_bp = 2500
+
+[basis.weather]
+clear_bp = 0
+rains_bp = -35
+fog_bp = -20
+windy_bp = 15
+
+[interest]
+base_leg_bp = 150
+linear_leg_bp = 25
+linear_scale_cents = 10_000_000
+convex_leg_bp = 40
+convex_gamma_q16 = 98_304
+per_leg_cap_bp = 1_200
+
+[rot]
+rot_floor = 0
+rot_ceiling = 4000
+rot_decay_per_day = 50
+conversion_chunk = 25
+debt_per_chunk_cents = 1_250
+
+[pp]
+min_pp = 1000
+max_pp = 10000
+neutral_pp = 5000
+planting_size_to_pp_bp = 250
+planting_max_age_days = 28
+decay_per_day_bp = 150
+pull_strength_bp = 600
+pull_decay_bp = 50
+
+[pricing]
+min_multiplier_bp = -3000
+max_multiplier_bp = 4000

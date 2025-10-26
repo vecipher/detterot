@@ -1,0 +1,289 @@
+[
+  {
+    "day": 0,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 173
+      },
+      {
+        "commodity": 2,
+        "value": 54
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -78
+      },
+      {
+        "commodity": 2,
+        "value": -46
+      }
+    ],
+    "pp_before": 5000,
+    "pp_after": 5025,
+    "rot_before": 200,
+    "rot_after": 0,
+    "debt_before": 10000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 1,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 139
+      },
+      {
+        "commodity": 2,
+        "value": 102
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -91
+      },
+      {
+        "commodity": 2,
+        "value": -85
+      }
+    ],
+    "pp_before": 5025,
+    "pp_after": 5041,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 2,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 339
+      },
+      {
+        "commodity": 2,
+        "value": 176
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -164
+      },
+      {
+        "commodity": 2,
+        "value": -91
+      }
+    ],
+    "pp_before": 5041,
+    "pp_after": 5048,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 3,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 369
+      },
+      {
+        "commodity": 2,
+        "value": 249
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -152
+      },
+      {
+        "commodity": 2,
+        "value": -223
+      }
+    ],
+    "pp_before": 5048,
+    "pp_after": 5046,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 4,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 337
+      },
+      {
+        "commodity": 2,
+        "value": 269
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -167
+      },
+      {
+        "commodity": 2,
+        "value": -195
+      }
+    ],
+    "pp_before": 5046,
+    "pp_after": 5035,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 5,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 306
+      },
+      {
+        "commodity": 2,
+        "value": 397
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -113
+      },
+      {
+        "commodity": 2,
+        "value": -147
+      }
+    ],
+    "pp_before": 5035,
+    "pp_after": 5015,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  },
+  {
+    "day": 6,
+    "hub": 1,
+    "di": [
+      {
+        "commodity": 1,
+        "value": 273
+      },
+      {
+        "commodity": 2,
+        "value": 396
+      }
+    ],
+    "basis": [
+      {
+        "commodity": 1,
+        "value": -170
+      },
+      {
+        "commodity": 2,
+        "value": -125
+      }
+    ],
+    "pp_before": 5015,
+    "pp_after": 4986,
+    "rot_before": 0,
+    "rot_after": 0,
+    "debt_before": 20000,
+    "debt_after": 20000,
+    "clamps_hit": [],
+    "rng_cursors": [
+      {
+        "label": "di",
+        "draws": 12
+      },
+      {
+        "label": "basis",
+        "draws": 12
+      }
+    ]
+  }
+]
