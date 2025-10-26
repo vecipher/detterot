@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
 
 use tempfile::tempdir;
@@ -27,9 +28,27 @@ fn micro_sim_generates_golden_csv() {
     assert!(status.success(), "econ-sim exited with {status:?}");
 
     let actual = fs::read_to_string(&out_path).expect("read csv");
-    let golden = include_str!("goldens/econ_curves_seed42.csv");
+    maybe_update_golden("goldens/econ_curves_seed42.csv", &actual);
+    let golden = load_golden("goldens/econ_curves_seed42.csv");
     verify_single_global_advance(&actual);
     assert_eq!(actual, golden);
+}
+
+fn manifest_tests_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests")
+}
+
+fn load_golden(relative_path: &str) -> String {
+    let golden_path = manifest_tests_dir().join(relative_path);
+    fs::read_to_string(golden_path).expect("read golden")
+}
+
+fn maybe_update_golden(relative_path: &str, contents: &str) {
+    if std::env::var_os("UPDATE_ECON_GOLDENS").is_none() {
+        return;
+    }
+    let golden_path = manifest_tests_dir().join(relative_path);
+    fs::write(&golden_path, contents).expect("write golden");
 }
 
 fn verify_single_global_advance(actual: &str) {

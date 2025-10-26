@@ -15,3 +15,13 @@ Foundation for the Detterot prototype. Launch the Bevy game from VS Code (F5) to
 - `tools/repro_harness` replays golden records and validates hashes for determinism checks.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for etiquette and performance expectations.
+
+## Economy goldens
+Economy determinism is guarded by CSV/JSON fixtures under `crates/econ_sim/tests/goldens/` and `crates/game/src/systems/economy/tests/`. Any intentional change to DI, basis, or interest math will move those fixtures. Regenerate them with the helper env var so the updated values are written back in-place:
+
+```
+UPDATE_ECON_GOLDENS=1 cargo test -p econ-sim micro_sim_generates_golden_csv
+UPDATE_ECON_GOLDENS=1 cargo test -p game state_step_matches_golden
+```
+
+Both tests now read the golden data at runtime, so re-running them without the env var immediately verifies the refreshed outputs.

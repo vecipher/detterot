@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::systems::economy::{
@@ -52,7 +53,10 @@ fn state_step_matches_golden() {
     }
 
     let actual = serde_json::to_string_pretty(&history).expect("serialize");
-    let golden = include_str!("state_step_golden.json").trim();
+    let golden_path = workspace_path("crates/game/src/systems/economy/tests/state_step_golden.json");
+    maybe_update_state_golden(&golden_path, &actual);
+    let golden_contents = fs::read_to_string(&golden_path).expect("read golden");
+    let golden = golden_contents.trim();
     assert_eq!(actual, golden);
 }
 
@@ -101,4 +105,11 @@ fn hub_only_scope_skips_global_progression() {
     assert_eq!(second_delta.pp_before, state.pp);
     assert_eq!(second_delta.pp_after, state.pp);
     assert_eq!(second_delta.interest_delta, MoneyCents::ZERO);
+}
+
+fn maybe_update_state_golden(path: &Path, contents: &str) {
+    if std::env::var_os("UPDATE_ECON_GOLDENS").is_none() {
+        return;
+    }
+    fs::write(path, format!("{contents}\n")).expect("write golden");
 }
