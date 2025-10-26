@@ -65,7 +65,16 @@ fn apply_basis_points(amount: MoneyCents, bp: i32) -> MoneyCents {
     let base = i128::from(amount.as_i64());
     let multiplier = i128::from(bp);
     let intermediate = base.saturating_mul(multiplier).saturating_mul(10);
-    let milli = intermediate.div_euclid(10_000);
+    let divisor = 10_000i128;
+    let mut milli = intermediate / divisor;
+    let remainder = intermediate % divisor;
+    if remainder != 0 {
+        match milli % 10 {
+            5 if remainder > 0 => milli = milli.saturating_add(1),
+            -5 if remainder < 0 => milli = milli.saturating_sub(1),
+            _ => {}
+        }
+    }
     let rounded = bankers_round_cents(milli);
     round_down_to_cents(i128::from(rounded.as_i64()) * 10)
 }

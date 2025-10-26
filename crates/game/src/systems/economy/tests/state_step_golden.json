@@ -23,7 +23,7 @@
       }
     ],
     "pp_before": 5000,
-    "pp_after": 5025,
+    "pp_after": 5074,
     "rot_before": 200,
     "rot_after": 0,
     "debt_before": 10000,
@@ -57,15 +57,15 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -91
+        "value": -87
       },
       {
         "commodity": 2,
-        "value": -85
+        "value": -81
       }
     ],
-    "pp_before": 5025,
-    "pp_after": 5041,
+    "pp_before": 5074,
+    "pp_after": 5138,
     "rot_before": 0,
     "rot_after": 0,
     "debt_before": 17762,
@@ -99,15 +99,15 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -164
+        "value": -156
       },
       {
         "commodity": 2,
-        "value": -91
+        "value": -83
       }
     ],
-    "pp_before": 5041,
-    "pp_after": 5048,
+    "pp_before": 5138,
+    "pp_after": 5192,
     "rot_before": 0,
     "rot_after": 0,
     "debt_before": 18028,
@@ -141,15 +141,15 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -152
+        "value": -136
       },
       {
         "commodity": 2,
-        "value": -223
+        "value": -207
       }
     ],
-    "pp_before": 5048,
-    "pp_after": 5046,
+    "pp_before": 5192,
+    "pp_after": 5237,
     "rot_before": 0,
     "rot_after": 0,
     "debt_before": 18298,
@@ -183,20 +183,20 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -167
+        "value": -143
       },
       {
         "commodity": 2,
-        "value": -195
+        "value": -171
       }
     ],
-    "pp_before": 5046,
-    "pp_after": 5035,
+    "pp_before": 5237,
+    "pp_after": 5272,
     "rot_before": 0,
     "rot_after": 0,
     "debt_before": 18572,
-    "interest_delta": 278,
-    "debt_after": 18850,
+    "interest_delta": 279,
+    "debt_after": 18851,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -225,20 +225,20 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -113
+        "value": -81
       },
       {
         "commodity": 2,
-        "value": -147
+        "value": -115
       }
     ],
-    "pp_before": 5035,
-    "pp_after": 5015,
+    "pp_before": 5272,
+    "pp_after": 5297,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 18850,
+    "debt_before": 18851,
     "interest_delta": 283,
-    "debt_after": 19133,
+    "debt_after": 19134,
     "clamps_hit": [],
     "rng_cursors": [
       {
@@ -267,20 +267,20 @@
     "basis": [
       {
         "commodity": 1,
-        "value": -170
+        "value": -126
       },
       {
         "commodity": 2,
-        "value": -125
+        "value": -81
       }
     ],
-    "pp_before": 5015,
-    "pp_after": 4986,
+    "pp_before": 5297,
+    "pp_after": 5313,
     "rot_before": 0,
     "rot_after": 0,
-    "debt_before": 19133,
+    "debt_before": 19134,
     "interest_delta": 287,
-    "debt_after": 19420,
+    "debt_after": 19421,
     "clamps_hit": [],
     "rng_cursors": [
       {

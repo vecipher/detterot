@@ -36,11 +36,15 @@ pub fn apply_planting_pull(pp: Pp, state: &mut EconState, cfg: &PpCfg) -> Pp {
         base_pull - decay > 0
     });
 
-    let delta_pp = (total_pull * i64::from(cfg.pull_strength_bp)).max(0) / 10_000;
-    let mut new_pp = pp.0 as i64;
-    let decay = i64::from(cfg.pull_decay_bp).max(0);
-    new_pp -= decay;
-    new_pp += delta_pp;
-    new_pp = new_pp.clamp(cfg.min_pp as i64, cfg.max_pp as i64);
+    let pull_decay_bp = i64::from(cfg.pull_decay_bp).clamp(-10_000, 10_000);
+    let effective_pull = total_pull * (10_000 - pull_decay_bp) / 10_000;
+    let delta_pp = effective_pull * i64::from(cfg.pull_strength_bp) / 10_000;
+
+    let current_pp = i64::from(pp.0);
+    let neutral_pp = i64::from(cfg.neutral_pp);
+    let gap = current_pp - neutral_pp;
+    let passive_decay = gap * i64::from(cfg.decay_per_day_bp) / 10_000;
+    let mut new_pp = current_pp - passive_decay + delta_pp;
+    new_pp = new_pp.clamp(i64::from(cfg.min_pp), i64::from(cfg.max_pp));
     Pp(new_pp as u16)
 }

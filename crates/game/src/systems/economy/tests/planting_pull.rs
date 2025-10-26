@@ -49,6 +49,50 @@ fn planting_pull_decays_over_time() {
 }
 
 #[test]
+fn neutral_pp_without_plantings_is_stable() {
+    let cfg = cfg();
+    let mut state = EconState {
+        pp: Pp(cfg.neutral_pp),
+        ..Default::default()
+    };
+
+    let result = apply_planting_pull(state.pp, &mut state, &cfg);
+
+    assert_eq!(result.0, cfg.neutral_pp);
+    assert!(state.pending_planting.is_empty());
+}
+
+#[test]
+fn passive_decay_and_pull_decay_follow_basis_points() {
+    let cfg = cfg();
+    let mut state = EconState {
+        pp: Pp(cfg.neutral_pp + 1_000),
+        ..Default::default()
+    };
+    schedule_planting(
+        PendingPlanting {
+            hub: HubId(42),
+            size: 10,
+            age_days: 0,
+        },
+        &mut state,
+    );
+
+    let result = apply_planting_pull(state.pp, &mut state, &cfg);
+
+    let total_pull = i64::from(cfg.planting_size_to_pp_bp) * 10;
+    let pull_decay_bp = i64::from(cfg.pull_decay_bp).clamp(-10_000, 10_000);
+    let effective_pull = total_pull * (10_000 - pull_decay_bp) / 10_000;
+    let pull_delta = effective_pull * i64::from(cfg.pull_strength_bp) / 10_000;
+    let gap = i64::from(state.pp.0) - i64::from(cfg.neutral_pp);
+    let passive_decay = gap * i64::from(cfg.decay_per_day_bp) / 10_000;
+    let expected = (i64::from(state.pp.0) - passive_decay + pull_delta)
+        .clamp(i64::from(cfg.min_pp), i64::from(cfg.max_pp));
+
+    assert_eq!(result.0 as i64, expected);
+}
+
+#[test]
 fn multiple_plantings_clamp_and_clear() {
     let cfg = cfg();
     let mut state = EconState {

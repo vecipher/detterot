@@ -22,7 +22,16 @@ pub fn compute_price(
         .saturating_mul(i128::from(multiplier))
         .saturating_mul(MILLI_CENT_SCALE);
 
-    let milli_cents = intermediate.div_euclid(i128::from(BASIS_SCALE));
+    let divisor = i128::from(BASIS_SCALE);
+    let mut milli_cents = intermediate / divisor;
+    let remainder = intermediate % divisor;
+    if remainder != 0 {
+        match milli_cents % 10 {
+            5 if remainder > 0 => milli_cents = milli_cents.saturating_add(1),
+            -5 if remainder < 0 => milli_cents = milli_cents.saturating_sub(1),
+            _ => {}
+        }
+    }
     let rounded = bankers_round_cents(milli_cents);
 
     // Final floor ensures we never carry residuals beyond a cent even if

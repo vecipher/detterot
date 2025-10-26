@@ -54,6 +54,16 @@ fn compute_price_handles_half_cent_ties() {
     let basis = BasisBp(-500);
     let rounded_down = compute_price(base, di, basis, &pricing);
     assert_eq!(rounded_down, MoneyCents(4));
+
+    let base = MoneyCents(100);
+    let di = BasisBp(51);
+    let basis = BasisBp(0);
+    let just_above_half_cent = compute_price(base, di, basis, &pricing);
+    assert_eq!(just_above_half_cent, MoneyCents(101));
+
+    let di = BasisBp(49);
+    let just_below_half_cent = compute_price(base, di, basis, &pricing);
+    assert_eq!(just_below_half_cent, MoneyCents(100));
 }
 
 #[test]

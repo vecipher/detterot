@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::systems::economy::{accrue_interest_per_leg, load_rulepack, MoneyCents};
+use crate::systems::economy::{accrue_interest_per_leg, load_rulepack, InterestCfg, MoneyCents};
 
 fn workspace_path(relative: &str) -> PathBuf {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -44,4 +44,24 @@ fn interest_is_piecewise_and_caps() {
     let (delta, _) = accrue_interest_per_leg(high_debt, &cfg);
     let observed_bp = (delta.as_i64() * 10_000) / high_debt.as_i64();
     assert_eq!(observed_bp, cfg.per_leg_cap_bp as i64);
+}
+
+#[test]
+fn interest_rounds_half_cent_boundaries() {
+    let mut cfg = InterestCfg {
+        base_leg_bp: 0,
+        linear_leg_bp: 0,
+        linear_scale_cents: 1,
+        convex_leg_bp: 0,
+        convex_gamma_q16: 0,
+        per_leg_cap_bp: i32::MAX,
+    };
+
+    cfg.base_leg_bp = 51;
+    let (delta_high, _) = accrue_interest_per_leg(MoneyCents(100), &cfg);
+    assert_eq!(delta_high, MoneyCents(1));
+
+    cfg.base_leg_bp = 49;
+    let (delta_low, _) = accrue_interest_per_leg(MoneyCents(100), &cfg);
+    assert_eq!(delta_low, MoneyCents(0));
 }
