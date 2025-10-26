@@ -220,7 +220,7 @@ pub fn step_economy_day(
         .push(RngCursor::new("basis", rng_basis.cursor()));
 
     if matches!(scope, EconStepScope::GlobalAndHub) {
-        log::log_econ_tick(&delta);
+        log::log_econ_tick(&delta, &rp.pricing);
     }
 
     delta

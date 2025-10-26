@@ -15,24 +15,24 @@ use serde_json::json;
 use super::state::EconDelta;
 
 #[cfg(feature = "econ_logs")]
-use super::{compute_price, BasisBp, CommodityId, MoneyCents, Weather};
+use super::{compute_price, rulepack::PricingCfg, BasisBp, CommodityId, MoneyCents, Weather};
 
 #[cfg(feature = "econ_logs")]
 const LOG_BASE_PRICE: MoneyCents = MoneyCents(10_000);
 
 #[cfg(feature = "econ_logs")]
-pub fn log_econ_tick(delta: &EconDelta) {
+pub fn log_econ_tick(delta: &EconDelta, pricing: &PricingCfg) {
     if delta.di.is_empty() {
         return;
     }
 
-    if let Err(err) = append_entries(delta) {
+    if let Err(err) = append_entries(delta, pricing) {
         eprintln!("econ log error: {err}");
     }
 }
 
 #[cfg(feature = "econ_logs")]
-fn append_entries(delta: &EconDelta) -> std::io::Result<()> {
+fn append_entries(delta: &EconDelta, pricing: &PricingCfg) -> std::io::Result<()> {
     let mut basis_lookup: HashMap<CommodityId, BasisBp> = HashMap::new();
     for entry in &delta.basis {
         basis_lookup.insert(entry.commodity, entry.value);
@@ -51,7 +51,7 @@ fn append_entries(delta: &EconDelta) -> std::io::Result<()> {
             .get(&entry.commodity)
             .copied()
             .unwrap_or(BasisBp(0));
-        let price = compute_price(LOG_BASE_PRICE, entry.value, basis_bp);
+        let price = compute_price(LOG_BASE_PRICE, entry.value, basis_bp, pricing);
         let record = json!({
             "day": delta.day.0,
             "hub": delta.hub.0,
@@ -89,13 +89,15 @@ fn json_err(err: serde_json::Error) -> IoError {
 }
 
 #[cfg(not(feature = "econ_logs"))]
-pub fn log_econ_tick(_delta: &EconDelta) {}
+pub fn log_econ_tick(_delta: &EconDelta, _pricing: &super::rulepack::PricingCfg) {}
 
 #[cfg(all(test, feature = "econ_logs"))]
 mod tests {
     use super::*;
     use crate::systems::economy::state::CommodityDelta;
-    use crate::systems::economy::{BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, Pp};
+    use crate::systems::economy::{
+        rulepack::PricingCfg, BasisBp, CommodityId, EconomyDay, HubId, MoneyCents, Pp,
+    };
     use tempfile::tempdir;
 
     #[test]
@@ -123,7 +125,11 @@ mod tests {
             clamps_hit: vec![],
             rng_cursors: vec![],
         };
-        log_econ_tick(&delta);
+        let pricing = PricingCfg {
+            min_multiplier_bp: -3_000,
+            max_multiplier_bp: 4_000,
+        };
+        log_econ_tick(&delta, &pricing);
         let log_path = dir.path().join("econ_tick.jsonl");
         let data = fs::read_to_string(log_path).expect("log file");
         assert!(data.contains("\"price_cents\""));
