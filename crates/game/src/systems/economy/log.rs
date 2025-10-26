@@ -5,7 +5,7 @@ use std::env;
 #[cfg(feature = "econ_logs")]
 use std::fs::{self, OpenOptions};
 #[cfg(feature = "econ_logs")]
-use std::io::{Error as IoError, ErrorKind, Write};
+use std::io::{Error as IoError, Write};
 #[cfg(feature = "econ_logs")]
 use std::path::{Path, PathBuf};
 
@@ -85,7 +85,7 @@ fn resolve_log_path() -> PathBuf {
 
 #[cfg(feature = "econ_logs")]
 fn json_err(err: serde_json::Error) -> IoError {
-    IoError::new(ErrorKind::Other, err)
+    IoError::other(err)
 }
 
 #[cfg(not(feature = "econ_logs"))]
