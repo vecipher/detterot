@@ -1,4 +1,3 @@
-# Enforce float arithmetic bans during the economy audit step.
-# This mirrors the project lint settings and ensures the dedicated audit
-# job fails if any economy code regresses to floats.
-float_arithmetic = "deny"
+# Placeholder Clippy config for the economy audit job.
+# Float arithmetic is denied via the `lints.clippy` table in `crates/game/Cargo.toml`,
+# so we do not need extra per-job overrides here today.
