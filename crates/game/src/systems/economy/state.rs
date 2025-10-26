@@ -120,6 +120,8 @@ pub fn step_economy_day(
     };
     let mut delta = EconDelta::new(day, hub);
 
+    let mut pp_for_basis = state.pp;
+
     if matches!(scope, EconStepScope::GlobalAndHub) {
         // 1. DI step
         let mut di_state = DiState {
@@ -157,6 +159,7 @@ pub fn step_economy_day(
 
         // 2. Planting pull / PP decay
         delta.pp_before = state.pp;
+        pp_for_basis = state.pp;
         state.pp = apply_planting_pull(state.pp, state, &rp.pp);
         delta.pp_after = state.pp;
 
@@ -183,6 +186,7 @@ pub fn step_economy_day(
         delta.debt_before = state.debt_cents;
         delta.debt_after = state.debt_cents;
         delta.interest_delta = MoneyCents::ZERO;
+        pp_for_basis = state.pp;
 
         let mut di_entries: Vec<_> = state.di_bp.iter().collect();
         di_entries.sort_by_key(|(commodity, _)| commodity.0);
@@ -199,7 +203,7 @@ pub fn step_economy_day(
     commodities.sort_by_key(|c| c.0);
     let mut rng_basis = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_BASIS);
     let drivers = BasisDrivers {
-        pp: state.pp,
+        pp: pp_for_basis,
         weather: Weather::Clear,
         closed_routes: 0,
         stock_dev: 0,
