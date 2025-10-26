@@ -101,7 +101,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn writes_jsonl_entry() {
+    fn log_shape_smoke() {
         let dir = tempdir().expect("dir");
         env::set_var("DETTEROT_ECON_LOG_DIR", dir.path());
         let delta = EconDelta {

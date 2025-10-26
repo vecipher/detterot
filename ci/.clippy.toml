@@ -1,1 +1,4 @@
-# Intentionally left blank. Clippy lints configured via Cargo manifests.
+# Enforce float arithmetic bans during the economy audit step.
+# This mirrors the project lint settings and ensures the dedicated audit
+# job fails if any economy code regresses to floats.
+float_arithmetic = "deny"
