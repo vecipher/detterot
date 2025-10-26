@@ -129,7 +129,8 @@ pub fn step_economy_day(
             overlay_bp: state.di_overlay_bp,
         };
         let prev_di = di_state.per_com.clone();
-        let mut rng_di = DetRng::from_seed(world_seed, econ_version, hub, day, RNG_TAG_DI);
+        let mut rng_di =
+            DetRng::from_seed_global(world_seed, econ_version, day, RNG_TAG_DI);
         step_di(day, &mut di_state, rp, &mut rng_di);
         state.di_bp = di_state.per_com;
         state.di_overlay_bp = di_state.overlay_bp;
