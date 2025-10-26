@@ -65,7 +65,8 @@ fn run_sim(args: &Args, rp: &Rulepack) -> Result<(), std::io::Error> {
                     .get(&(hub, commodity))
                     .copied()
                     .unwrap_or(BasisBp(0));
-                let price = compute_price(MoneyCents(BASE_PRICE_CENTS), di_bp, basis_bp);
+                let price =
+                    compute_price(MoneyCents(BASE_PRICE_CENTS), di_bp, basis_bp, &rp.pricing);
                 writeln!(
                     writer,
                     "{day},{},{},{},{},{},{},{},{},{}",
