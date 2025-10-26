@@ -1,3 +1,5 @@
+#![allow(clippy::float_arithmetic)] // Camera perf scenes rely on float interpolation.
+
 use bevy::prelude::*;
 use serde::Deserialize;
 

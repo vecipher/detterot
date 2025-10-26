@@ -1,3 +1,5 @@
+#![allow(clippy::float_arithmetic)] // UI diagnostics intentionally use floats for rendering stats.
+
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::text::{TextColor, TextFont};
