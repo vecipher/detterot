@@ -118,6 +118,7 @@ mod tests {
             rot_before: 0,
             rot_after: 0,
             debt_before: MoneyCents(0),
+            interest_delta: MoneyCents(0),
             debt_after: MoneyCents(0),
             clamps_hit: vec![],
             rng_cursors: vec![],

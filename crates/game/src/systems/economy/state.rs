@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     basis::{update_basis, BasisDrivers},
     di::{step_di, DiState},
+    interest::accrue_interest_per_leg,
     log,
     planting::apply_planting_pull,
     rot::convert_rot_to_debt,
@@ -56,6 +57,7 @@ pub struct EconDelta {
     pub rot_before: u16,
     pub rot_after: u16,
     pub debt_before: MoneyCents,
+    pub interest_delta: MoneyCents,
     pub debt_after: MoneyCents,
     pub clamps_hit: Vec<String>,
     pub rng_cursors: Vec<RngCursor>,
@@ -182,6 +184,10 @@ pub fn step_economy_day(
     delta.rot_after = rot_after;
     delta.debt_before = state.debt_cents;
     state.debt_cents = state.debt_cents.saturating_add(debt_delta);
+    let (interest_delta, debt_with_interest) =
+        accrue_interest_per_leg(state.debt_cents, &rp.interest);
+    state.debt_cents = debt_with_interest;
+    delta.interest_delta = interest_delta;
     delta.debt_after = state.debt_cents;
 
     // 5. Advance day
