@@ -43,26 +43,40 @@ fn run_sim(args: &Args, rp: &Rulepack) -> Result<(), std::io::Error> {
         "day,hub,com,di_bp,basis_bp,price_cents,debt_cents,interest_cents,pp,rot_u16"
     )?;
 
-    let mut states = seed_states(args, rp);
+    let (mut state, hubs) = seed_state(args, rp);
     for day in 0..args.days {
-        for (idx, state) in states.iter_mut().enumerate() {
-            let hub = HubId((idx as u16) + 1);
-            let delta = step_economy_day(
-                rp,
-                args.world_seed,
-                ECON_VERSION,
-                hub,
-                state,
-                EconStepScope::GlobalAndHub,
-            );
-            let interest = delta.interest_delta;
-            let mut commodities: Vec<_> = state.di_bp.keys().copied().collect();
-            commodities.sort_by_key(|c| c.0);
-            for commodity in commodities {
-                let di_bp = state.di_bp.get(&commodity).copied().unwrap_or(BasisBp(0));
+        let mut interest_by_hub = Vec::with_capacity(hubs.len());
+        let mut global_snapshot = None;
+        for (idx, hub) in hubs.iter().enumerate() {
+            let scope = if idx == 0 {
+                EconStepScope::GlobalAndHub
+            } else {
+                EconStepScope::HubOnly
+            };
+            let delta =
+                step_economy_day(rp, args.world_seed, ECON_VERSION, hub.id, &mut state, scope);
+            if idx == 0 {
+                global_snapshot = Some(GlobalSnapshot {
+                    debt_cents: state.debt_cents,
+                    pp: state.pp,
+                    rot_u16: state.rot_u16,
+                });
+            }
+            interest_by_hub.push(delta.interest_delta);
+            assert!(delta.day.0 <= day, "delta day monotonic");
+        }
+
+        let global_snapshot = global_snapshot.expect("at least one hub");
+        let mut commodities: Vec<_> = state.di_bp.keys().copied().collect();
+        commodities.sort_by_key(|c| c.0);
+
+        for (interest, hub_metadata) in interest_by_hub.into_iter().zip(hubs.iter()) {
+            let hub_id = hub_metadata.id;
+            for commodity in &commodities {
+                let di_bp = state.di_bp.get(commodity).copied().unwrap_or(BasisBp(0));
                 let basis_bp = state
                     .basis_bp
-                    .get(&(hub, commodity))
+                    .get(&(hub_id, *commodity))
                     .copied()
                     .unwrap_or(BasisBp(0));
                 let price =
@@ -70,44 +84,53 @@ fn run_sim(args: &Args, rp: &Rulepack) -> Result<(), std::io::Error> {
                 writeln!(
                     writer,
                     "{day},{},{},{},{},{},{},{},{},{}",
-                    hub.0,
+                    hub_id.0,
                     commodity.0,
                     di_bp.0,
                     basis_bp.0,
                     price.as_i64(),
-                    state.debt_cents.as_i64(),
+                    global_snapshot.debt_cents.as_i64(),
                     interest.as_i64(),
-                    state.pp.0,
-                    state.rot_u16
+                    global_snapshot.pp.0,
+                    global_snapshot.rot_u16
                 )?;
             }
-            assert!(delta.day.0 <= day, "delta day monotonic");
         }
     }
 
     writer.flush()
 }
 
-fn seed_states(args: &Args, rp: &Rulepack) -> Vec<EconState> {
-    let mut states = Vec::with_capacity(args.hubs as usize);
-    for idx in 0..args.hubs as usize {
-        let mut di_bp = HashMap::new();
-        di_bp.insert(CommodityId(1), BasisBp(0));
-        di_bp.insert(CommodityId(2), BasisBp(0));
-        let pp_value = pick_value(idx, &args.pp, rp.pp.neutral_pp);
-        let debt_value = pick_value(idx, &args.debt, 0i64);
-        states.push(EconState {
-            day: EconomyDay(0),
-            di_bp,
-            di_overlay_bp: 0,
-            basis_bp: HashMap::new(),
-            pp: Pp(pp_value),
-            rot_u16: 0,
-            pending_planting: Vec::new(),
-            debt_cents: MoneyCents(debt_value),
-        });
-    }
-    states
+fn seed_state(args: &Args, rp: &Rulepack) -> (EconState, Vec<HubMetadata>) {
+    let mut di_bp = HashMap::new();
+    di_bp.insert(CommodityId(1), BasisBp(0));
+    di_bp.insert(CommodityId(2), BasisBp(0));
+    let pp_value = pick_value(0, &args.pp, rp.pp.neutral_pp);
+    let debt_value = pick_value(0, &args.debt, 0i64);
+    let state = EconState {
+        day: EconomyDay(0),
+        di_bp,
+        di_overlay_bp: 0,
+        basis_bp: HashMap::new(),
+        pp: Pp(pp_value),
+        rot_u16: 0,
+        pending_planting: Vec::new(),
+        debt_cents: MoneyCents(debt_value),
+    };
+    let hubs = (0..args.hubs)
+        .map(|idx| HubMetadata { id: HubId(idx + 1) })
+        .collect();
+    (state, hubs)
+}
+
+struct HubMetadata {
+    id: HubId,
+}
+
+struct GlobalSnapshot {
+    debt_cents: MoneyCents,
+    pp: Pp,
+    rot_u16: u16,
 }
 
 fn pick_value<T: Copy>(idx: usize, values: &[T], default: T) -> T {
