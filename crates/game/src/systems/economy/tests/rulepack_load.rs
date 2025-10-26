@@ -29,10 +29,13 @@ fn rejects_unknown_keys() {
     let source_path = workspace_path("assets/rulepacks/day_001.toml");
     let base = fs::read_to_string(source_path).expect("fixture");
     let marker = "[di]\n";
+    let marker_pos = base
+        .find(marker)
+        .expect("rulepack should contain DI section header");
     let mut mutated = String::with_capacity(base.len() + 64);
-    mutated.push_str(marker);
+    mutated.push_str(&base[..marker_pos + marker.len()]);
     mutated.push_str("unknown_field = 1\n");
-    mutated.push_str(&base[marker.len()..]);
+    mutated.push_str(&base[marker_pos + marker.len()..]);
 
     let mut tmp = NamedTempFile::new().expect("tmp file");
     tmp.write_all(mutated.as_bytes()).expect("write tmp");
