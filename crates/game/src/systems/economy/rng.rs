@@ -20,11 +20,27 @@ impl DetRng {
         day: EconomyDay,
         tag: u32,
     ) -> Self {
+        Self::from_seed_inner(world_seed, econ_version, Some(hub), day, tag)
+    }
+
+    pub fn from_seed_global(world_seed: u64, econ_version: u32, day: EconomyDay, tag: u32) -> Self {
+        Self::from_seed_inner(world_seed, econ_version, None, day, tag)
+    }
+
+    fn from_seed_inner(
+        world_seed: u64,
+        econ_version: u32,
+        hub: Option<HubId>,
+        day: EconomyDay,
+        tag: u32,
+    ) -> Self {
         let mut hasher = Hasher::new();
         hasher.update(b"det_rng_v1");
         hasher.update(&world_seed.to_le_bytes());
         hasher.update(&econ_version.to_le_bytes());
-        hasher.update(&hub.0.to_le_bytes());
+        if let Some(hub) = hub {
+            hasher.update(&hub.0.to_le_bytes());
+        }
         hasher.update(&day.0.to_le_bytes());
         hasher.update(&tag.to_le_bytes());
         let hash = hasher.finalize();
