@@ -201,6 +201,7 @@ fn test_leg_context() -> LegContext {
         mission_minutes: 12,
         player_rating: 40,
         multiplayer: false,
+        prior_danger_score: None,
     }
 }
 
