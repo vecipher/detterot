@@ -15,7 +15,7 @@ fn main() {
     let data = std::fs::read_to_string(&args.replay).expect("record file");
     let rec: Record = serde_json::from_str(&data).expect("valid record");
     // For M0 we don't simulate; we just hash the record content.
-    let got = hash_record(&rec);
+    let got = hash_record(&rec).expect("hash record");
     if let Some(expected_path) = args.assert_hash {
         let expected = std::fs::read_to_string(expected_path)
             .expect("hash file")
