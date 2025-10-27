@@ -180,7 +180,12 @@ fn director_tick_system(
     mut runtime: ResMut<DirectorRuntime>,
     mut queue: ResMut<CommandQueue>,
     mut requests: ResMut<DirectorRequests>,
+    pause: Res<PauseState>,
 ) {
+    if pause.hard_paused_sp {
+        return;
+    }
+
     if runtime.cfg.is_none() {
         return;
     }
@@ -280,7 +285,12 @@ fn missions_system(
     mut econ: ResMut<EconIntent>,
     mut queue: ResMut<CommandQueue>,
     state: Res<DirectorState>,
+    pause: Res<PauseState>,
 ) {
+    if pause.hard_paused_sp {
+        return;
+    }
+
     if runtime.cfg.is_none() {
         return;
     }
@@ -351,7 +361,12 @@ fn spawn_system(
     state: Res<DirectorState>,
     inputs: Res<DirectorInputs>,
     mut queue: ResMut<CommandQueue>,
+    pause: Res<PauseState>,
 ) {
+    if pause.hard_paused_sp {
+        return;
+    }
+
     if runtime.spawns_emitted {
         return;
     }
@@ -387,7 +402,12 @@ fn cleanup_system(
     mut state: ResMut<DirectorState>,
     mut runtime: ResMut<DirectorRuntime>,
     mut econ: ResMut<EconIntent>,
+    pause: Res<PauseState>,
 ) {
+    if pause.hard_paused_sp {
+        return;
+    }
+
     if runtime.missions_total > 0
         && runtime.missions_resolved >= runtime.missions_total
         && !matches!(state.status, LegStatus::Completed(_))
