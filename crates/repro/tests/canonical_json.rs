@@ -16,6 +16,7 @@ fn canonical_json_is_sorted() {
             cadence_per_min: 5,
             mission_minutes: 12,
             player_rating: 62,
+            prior_danger_score: None,
         },
         commands: vec![Command::meter_at(0, "danger", 1)],
         inputs: Vec::new(),

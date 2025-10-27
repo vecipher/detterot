@@ -206,6 +206,8 @@ pub struct RecordMeta {
     pub mission_minutes: u32,
     #[serde(default)]
     pub player_rating: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prior_danger_score: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -284,6 +286,7 @@ mod tests {
                 cadence_per_min: 3,
                 mission_minutes: 8,
                 player_rating: 50,
+                prior_danger_score: None,
             },
             commands: vec![Command::meter_at(0, "danger_score", 42)],
             inputs: vec![InputEvent {
@@ -312,6 +315,7 @@ mod tests {
                 cadence_per_min: 5,
                 mission_minutes: 9,
                 player_rating: 60,
+                prior_danger_score: None,
             },
             ..Record::default()
         };

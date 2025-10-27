@@ -91,6 +91,7 @@ pub struct LegContext {
     pub mission_minutes: u32,
     pub player_rating: u8,
     pub multiplayer: bool,
+    pub prior_danger_score: Option<i32>,
 }
 
 #[derive(Resource, Default, Clone, Copy)]
@@ -180,6 +181,7 @@ fn setup_director(
     state.weather = context.weather;
     state.world_seed = context.world_seed;
     state.day = context.day;
+    state.prior_danger_score = context.prior_danger_score.unwrap_or_default();
     runtime.init_all(context.world_seed, context.link_id, context.day, &catalog.0);
     let spawn_id = hash_mission_name("spawn_types");
     memory.spawn_seed = mission_seed(context.world_seed, context.link_id, context.day, spawn_id);
@@ -335,6 +337,7 @@ fn finalize_leg(
     mut state: ResMut<DirectorState>,
     mut econ: ResMut<EconIntent>,
     mut queue: ResMut<CommandQueue>,
+    mut context: ResMut<LegContext>,
     pause: Res<PauseState>,
 ) {
     if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
@@ -356,6 +359,7 @@ fn finalize_leg(
         econ.pending_basis_overlay_bp as i32,
     );
     state.prior_danger_score = state.current_danger_score;
+    context.prior_danger_score = Some(state.current_danger_score);
     if state.leg_tick >= 600 {
         state.status = LegStatus::Completed(Outcome::Success);
     }

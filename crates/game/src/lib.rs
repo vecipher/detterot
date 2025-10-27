@@ -70,6 +70,7 @@ fn run_record(options: CliOptions) -> Result<()> {
             cadence_per_min: context.cadence_per_min,
             mission_minutes: context.mission_minutes,
             player_rating: context.player_rating,
+            prior_danger_score: context.prior_danger_score,
         },
         commands,
         inputs: Vec::new(),
@@ -252,6 +253,7 @@ fn leg_context_from_options(options: &CliOptions) -> LegContext {
         mission_minutes: options.mission_minutes(),
         player_rating: options.player_rating(),
         multiplayer: false,
+        prior_danger_score: None,
     }
 }
 
@@ -266,6 +268,7 @@ fn leg_context_from_record(meta: &RecordMeta, options: &CliOptions) -> Result<Le
     context.cadence_per_min = meta.cadence_per_min;
     context.mission_minutes = meta.mission_minutes;
     context.player_rating = meta.player_rating;
+    context.prior_danger_score = meta.prior_danger_score;
     Ok(context)
 }
 
