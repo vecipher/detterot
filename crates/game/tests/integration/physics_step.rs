@@ -6,8 +6,11 @@ const FIXED_STEP_SECONDS: f64 = f64::from_bits(0x3F91_1111_1111_1111);
 
 use game::scheduling;
 use game::systems::command_queue::CommandQueue;
-use game::systems::director::{DirectorPlugin, DirectorState, LegContext};
+use game::systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use game::systems::economy::{Pp, RouteId, Weather};
+
+const SLOWMO_NUMERATOR: u32 = 4;
+const SLOWMO_DENOMINATOR: u32 = 5;
 
 fn build_director_app() -> App {
     let mut app = App::new();
@@ -90,6 +93,54 @@ fn physics_step_advances_physics_time() {
     let expected = expected_substeps(cadence);
     let actual = app.world().resource::<SubstepCount>().0;
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn physics_step_slowmo_scales_cadence_and_time() {
+    let mut app = build_director_app();
+
+    let initial_elapsed = app.world().resource::<Time<Physics>>().elapsed();
+    step_once(&mut app);
+    let cadence = test_leg_context().cadence_per_min;
+    let expected_normal = expected_substeps(cadence);
+    let (first_elapsed, normal_delta, normal_substeps) = {
+        let world = app.world();
+        let first_elapsed = world.resource::<Time<Physics>>().elapsed();
+        let normal_substeps = world.resource::<SubstepCount>().0;
+        (
+            first_elapsed,
+            first_elapsed - initial_elapsed,
+            normal_substeps,
+        )
+    };
+
+    assert_eq!(normal_substeps, expected_normal);
+
+    app.world_mut()
+        .resource_scope(|world, mut queue: Mut<CommandQueue>| {
+            world
+                .resource_mut::<WheelState>()
+                .set_slowmo(&mut queue, true);
+        });
+
+    step_once(&mut app);
+    let (slowmo_delta, slowmo_substeps) = {
+        let world = app.world();
+        let second_elapsed = world.resource::<Time<Physics>>().elapsed();
+        let slowmo_substeps = world.resource::<SubstepCount>().0;
+        (second_elapsed - first_elapsed, slowmo_substeps)
+    };
+
+    let expected_cadence = cadence.saturating_mul(SLOWMO_NUMERATOR) / SLOWMO_DENOMINATOR;
+    let expected_slowmo = expected_substeps(expected_cadence);
+
+    assert_eq!(slowmo_substeps, expected_slowmo);
+
+    let normal_nanos = normal_delta.as_nanos();
+    let expected_slowmo_nanos = normal_nanos
+        .saturating_mul(SLOWMO_NUMERATOR as u128)
+        .saturating_div(SLOWMO_DENOMINATOR as u128);
+    assert_eq!(slowmo_delta.as_nanos(), expected_slowmo_nanos);
 }
 
 #[cfg(feature = "deterministic")]

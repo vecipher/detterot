@@ -14,6 +14,7 @@ use bevy::ecs::schedule::{Schedule, ScheduleLabel};
 use bevy::prelude::*;
 use bevy::time::Fixed;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use crate::logs::m2;
 use crate::scheduling::sets;
@@ -301,6 +302,25 @@ fn dispatch_spawns(
     }
 }
 
+const SLOWMO_NUMERATOR: u32 = 4;
+const SLOWMO_DENOMINATOR: u32 = 5;
+
+fn scale_duration(duration: Duration, numerator: u32, denominator: u32) -> Duration {
+    if numerator == denominator {
+        return duration;
+    }
+
+    let total_nanos = duration.as_nanos();
+    let scaled = total_nanos
+        .saturating_mul(numerator as u128)
+        .saturating_div(denominator as u128);
+
+    Duration::new(
+        (scaled / 1_000_000_000) as u64,
+        (scaled % 1_000_000_000) as u32,
+    )
+}
+
 fn physics_step(world: &mut World) {
     let paused = world.resource::<PauseState>().hard_paused_sp;
     let status = {
@@ -312,12 +332,31 @@ fn physics_step(world: &mut World) {
     }
 
     let context = *world.resource::<LegContext>();
+    let wheel = *world.resource::<WheelState>();
+    let base_cadence = context.cadence_per_min;
+    let effective_cadence = if wheel.slowmo_enabled {
+        base_cadence.saturating_mul(SLOWMO_NUMERATOR) / SLOWMO_DENOMINATOR
+    } else {
+        base_cadence
+    };
+
+    let base_delta = world.resource::<Time<Fixed>>().timestep();
+    let effective_delta = if wheel.slowmo_enabled {
+        scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
+    } else {
+        base_delta
+    };
+
+    if let Some(mut queue) = world.get_resource_mut::<CommandQueue>() {
+        let nanos = effective_delta.as_nanos().min(i32::MAX as u128) as i32;
+        queue.meter("physics_fixed_dt_ns", nanos);
+    }
+
     if let Some(mut substeps) = world.get_resource_mut::<SubstepCount>() {
-        let cadence = context.cadence_per_min;
-        let desired = if cadence == 0 {
+        let desired = if effective_cadence == 0 {
             1
         } else {
-            ((cadence - 1) / 60).saturating_add(1)
+            ((effective_cadence - 1) / 60).saturating_add(1)
         };
         let target = desired.clamp(1, 12);
         if substeps.0 != target {
@@ -325,8 +364,7 @@ fn physics_step(world: &mut World) {
         }
     }
 
-    let fixed_delta = world.resource::<Time<Fixed>>().timestep();
-    world.resource_mut::<Time>().advance_by(fixed_delta);
+    world.resource_mut::<Time>().advance_by(effective_delta);
 
     world.run_schedule(DirectorPhysicsSchedule);
 }
