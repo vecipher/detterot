@@ -125,9 +125,16 @@ fn run_headless_loop<'a>(
 
 struct ReplaySession {
     expected: VecDeque<(u32, Vec<Command>)>,
+    inflight: Option<InFlight>,
     continue_after_mismatch: bool,
     mismatched: bool,
     logs_enabled: bool,
+}
+
+struct InFlight {
+    tick: u32,
+    commands: Vec<Command>,
+    consumed: usize,
 }
 
 impl ReplaySession {
@@ -138,6 +145,7 @@ impl ReplaySession {
         }
         Self {
             expected: grouped.into_iter().collect(),
+            inflight: None,
             continue_after_mismatch,
             mismatched: false,
             logs_enabled,
@@ -146,7 +154,7 @@ impl ReplaySession {
 
     fn push_commands(&mut self, tick: u32, commands: Vec<Command>) -> Result<()> {
         if let Some((mismatch_tick, expected_cmds, got_cmds)) =
-            Self::compute_mismatch(&mut self.expected, tick, &commands)
+            self.compute_mismatch(tick, &commands)
         {
             self.handle_mismatch(mismatch_tick, &expected_cmds, &got_cmds)?;
         }
@@ -154,25 +162,78 @@ impl ReplaySession {
     }
 
     fn compute_mismatch(
-        expected: &mut VecDeque<(u32, Vec<Command>)>,
+        &mut self,
         tick: u32,
         commands: &[Command],
     ) -> Option<(u32, Vec<Command>, Vec<Command>)> {
-        if let Some((expected_tick, _)) = expected.front() {
+        if let Some(mut current) = self.inflight.take() {
+            if tick > current.tick && current.consumed < current.commands.len() {
+                return Some((
+                    current.tick,
+                    current.commands[current.consumed..].to_vec(),
+                    Vec::new(),
+                ));
+            }
+
+            if tick < current.tick {
+                if commands.is_empty() {
+                    self.inflight = Some(current);
+                    return None;
+                }
+                return Some((tick, Vec::new(), commands.to_vec()));
+            }
+
+            if tick == current.tick {
+                let remaining = current.commands.len().saturating_sub(current.consumed);
+                if commands.len() > remaining {
+                    return Some((
+                        current.tick,
+                        current.commands[current.consumed..].to_vec(),
+                        commands.to_vec(),
+                    ));
+                }
+                let expected_slice =
+                    &current.commands[current.consumed..current.consumed + commands.len()];
+                if expected_slice != commands {
+                    return Some((current.tick, current.commands.clone(), commands.to_vec()));
+                }
+                current.consumed += commands.len();
+                if current.consumed < current.commands.len() {
+                    self.inflight = Some(current);
+                }
+                return None;
+            }
+
+            // tick > current.tick but nothing left to consume
+        }
+
+        if let Some((expected_tick, _)) = self.expected.front() {
             if *expected_tick < tick {
-                let (late_tick, exp) = expected.pop_front().unwrap();
+                let (late_tick, exp) = self.expected.pop_front().unwrap();
                 return Some((late_tick, exp, Vec::new()));
             }
-        }
-        if let Some((expected_tick, _)) = expected.front() {
             if *expected_tick == tick {
-                let (_, exp) = expected.pop_front().unwrap();
-                if exp != commands {
-                    return Some((tick, exp, commands.to_vec()));
+                let (tick, cmds) = self.expected.pop_front().unwrap();
+                let mut current = InFlight {
+                    tick,
+                    commands: cmds,
+                    consumed: 0,
+                };
+                if commands.len() > current.commands.len() {
+                    return Some((current.tick, current.commands, commands.to_vec()));
+                }
+                let expected_slice = &current.commands[..commands.len()];
+                if expected_slice != commands {
+                    return Some((current.tick, current.commands, commands.to_vec()));
+                }
+                current.consumed = commands.len();
+                if current.consumed < current.commands.len() {
+                    self.inflight = Some(current);
                 }
                 return None;
             }
         }
+
         if commands.is_empty() {
             None
         } else {
@@ -205,6 +266,12 @@ impl ReplaySession {
     }
 
     fn finalize(&mut self) -> Result<()> {
+        if let Some(current) = self.inflight.take() {
+            if current.consumed < current.commands.len() {
+                let expected_remaining = current.commands[current.consumed..].to_vec();
+                self.handle_mismatch(current.tick, &expected_remaining, &[])?;
+            }
+        }
         let leftovers: Vec<_> = self.expected.drain(..).collect();
         for (tick, cmds) in leftovers {
             self.handle_mismatch(tick, &cmds, &[])?;
