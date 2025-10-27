@@ -230,6 +230,7 @@ pub mod goldens {
         pub rulepack: Option<String>,
         pub pp: Option<u16>,
         pub prior_enemies: Option<u32>,
+        pub prior_danger_score: Option<i32>,
         pub mission_minutes: Option<u32>,
         pub density_per_10k: Option<u32>,
         pub cadence_per_min: Option<u32>,
@@ -282,6 +283,7 @@ pub mod goldens {
             params.pp = Pp(pp);
         }
         params.prior_enemies = case.prior_enemies;
+        params.prior_danger_score = case.prior_danger_score;
         if let Some(minutes) = case.mission_minutes {
             params.mission_minutes = minutes;
         }

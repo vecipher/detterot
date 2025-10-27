@@ -6,6 +6,7 @@ weather = "Clear"
 rng_salt = "salt_low"
 pp = 0
 prior_enemies = 0
+prior_danger_score = 40000
 mission_minutes = 8
 density_per_10k = 55
 cadence_per_min = 4
@@ -19,6 +20,7 @@ weather = "Clear"
 rng_salt = "salt_med"
 pp = 200
 prior_enemies = 8
+# prior_danger_score intentionally omitted to fall back to default
 mission_minutes = 10
 density_per_10k = 65
 cadence_per_min = 5

@@ -4,6 +4,7 @@ use game::{
     runtime::{self, HeadlessConfig},
     systems::director::LegParameters,
 };
+use repro::Command;
 
 const DEFAULT_DT: f64 = 0.033_333_333_3;
 const DEFAULT_MAX_TICKS: u32 = 200_000;
@@ -18,6 +19,8 @@ fn golden_hashes_match() {
         !cases.is_empty(),
         "golden manifest must list at least one record"
     );
+    let mut saw_non_positive_diff = false;
+
     for case in cases {
         let json_path = base.join(&case.file);
         let json = fs::read_to_string(&json_path).expect("record json present");
@@ -60,5 +63,20 @@ fn golden_hashes_match() {
             "command stream mismatch for {:?}",
             json_path
         );
+
+        if let Some(diff) = produced
+            .commands
+            .iter()
+            .find_map(|timed| match &timed.command {
+                Command::Meter { key, value } if key == "danger_diff" => Some(*value),
+                _ => None,
+            })
+        {
+            if diff <= 0 {
+                saw_non_positive_diff = true;
+            }
+        }
     }
+
+    assert!(saw_non_positive_diff, "expected at least one non-positive danger_diff");
 }
