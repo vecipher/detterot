@@ -1,0 +1,58 @@
+[spawn]
+base = 8
+alpha_pp_per_100 = 5
+growth_cap_per_leg = 8
+clamp_min = 2
+clamp_max = 40
+
+[spawn.beta_weather]
+Clear = 0
+Rains = 4
+Fog = 6
+Windy = 3
+
+[weather_types.Clear]
+bandit = 1.0
+scout = 0.5
+
+[weather_types.Rains]
+striker = 1.0
+brute = 0.7
+
+[weather_types.Fog]
+cultist = 1.0
+ambusher = 0.8
+
+[weather_types.Windy]
+rider = 1.0
+archer = 0.6
+
+[missions.rain_flag]
+pp_success = -6
+pp_fail = 4
+basis_bp_success = -20
+basis_bp_fail = 10
+
+[missions.sourvault]
+pp_success = -4
+pp_fail = 6
+basis_bp_success = 0
+basis_bp_fail = 0
+
+[missions.break_chain]
+pp_success = -8
+pp_fail = 8
+basis_bp_success = 0
+basis_bp_fail = 0
+
+[missions.wayleave]
+pp_success = -5
+pp_fail = 3
+basis_bp_success = 0
+basis_bp_fail = 0
+
+[missions.anchor_audit]
+pp_success = -3
+pp_fail = 2
+basis_bp_success = 0
+basis_bp_fail = 0
