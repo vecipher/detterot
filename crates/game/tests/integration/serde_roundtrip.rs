@@ -60,7 +60,7 @@ fn save_roundtrip_is_byte_identical() {
     let snapshot = sample_save();
     save(&path, &snapshot).expect("write save");
     let written = fs::read_to_string(&path).expect("read save");
-    let golden = include_str!("goldens/save_v1_roundtrip.json");
+    let golden = include_str!("../goldens/save_v1_roundtrip.json");
     assert_eq!(written, golden);
     let loaded = load(&path).expect("load save");
     assert_eq!(loaded, snapshot);
