@@ -92,6 +92,7 @@ pub struct SpawnMemory {
     pub pending_budget: Option<SpawnBudget>,
     pub spawn_seed: u64,
     pub spawn_counter: u64,
+    pub last_spawned_enemies: u32,
 }
 
 pub struct DirectorPlugin;
@@ -187,7 +188,6 @@ fn drive_director(
         );
     }
     memory.last_budget = Some(budget);
-    memory.prior_enemies = Some(budget.enemies);
 
     let prior_danger = state.prior_danger_score;
     let previous_value = state.current_danger_score;
@@ -233,7 +233,10 @@ fn dispatch_spawns(
     if let Some(budget) = memory.pending_budget.take() {
         queue.meter("spawn_count", budget.enemies as i32);
         let base_x = (state.leg_tick as i32) * 1000;
-        for idx in 0..budget.enemies {
+        let previous_spawned = memory.last_spawned_enemies;
+        let desired_spawned = budget.enemies;
+        let new_spawns = desired_spawned.saturating_sub(previous_spawned);
+        for idx in 0..new_spawns {
             let offset_mm = (idx as i32) * 100;
             let kind = choose_spawn_type(
                 &tables,
@@ -244,6 +247,8 @@ fn dispatch_spawns(
             memory.spawn_counter = memory.spawn_counter.saturating_add(1);
             queue.spawn(&kind, base_x + offset_mm, 0, 0);
         }
+        memory.last_spawned_enemies = previous_spawned.max(desired_spawned);
+        memory.prior_enemies = Some(memory.last_spawned_enemies);
     }
 }
 
