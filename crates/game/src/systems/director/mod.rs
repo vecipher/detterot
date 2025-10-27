@@ -201,10 +201,11 @@ fn director_tick_system(
         requests.queue_new_leg = false;
     }
 
-    if !runtime.missions_ready && matches!(state.status, LegStatus::Loading) {
-        if !prepare_new_leg(&mut runtime, &mut state, &inputs) {
-            return;
-        }
+    if !runtime.missions_ready
+        && matches!(state.status, LegStatus::Loading)
+        && !prepare_new_leg(&mut runtime, &mut state, &inputs)
+    {
+        return;
     }
 
     if !runtime.missions_ready {
@@ -387,32 +388,33 @@ fn cleanup_system(
     mut runtime: ResMut<DirectorRuntime>,
     mut econ: ResMut<EconIntent>,
 ) {
-    if runtime.missions_total > 0 && runtime.missions_resolved >= runtime.missions_total {
-        if !matches!(state.status, LegStatus::Completed(_)) {
-            let outcome = if runtime.any_failure {
-                Outcome::Failure
-            } else {
-                Outcome::Success
-            };
-            state.status = LegStatus::Completed(outcome);
-            let danger_delta = runtime.current_danger_score - state.prior_danger_score;
-            m2::log_post_leg_summary(
-                state.leg_tick,
-                danger_delta,
-                econ.pending_pp_delta,
-                econ.pending_basis_overlay_bp,
-                0,
-                0,
-            );
-            state.prior_danger_score = runtime.current_danger_score;
-            runtime.has_prior_danger = true;
-            *econ = EconIntent::default();
-            runtime.missions_ready = false;
-            runtime.active_missions.clear();
-            runtime.spawn_budget = None;
-            runtime.spawns_emitted = false;
-            runtime.needs_budget_refresh = true;
-        }
+    if runtime.missions_total > 0
+        && runtime.missions_resolved >= runtime.missions_total
+        && !matches!(state.status, LegStatus::Completed(_))
+    {
+        let outcome = if runtime.any_failure {
+            Outcome::Failure
+        } else {
+            Outcome::Success
+        };
+        state.status = LegStatus::Completed(outcome);
+        let danger_delta = runtime.current_danger_score - state.prior_danger_score;
+        m2::log_post_leg_summary(
+            state.leg_tick,
+            danger_delta,
+            econ.pending_pp_delta,
+            econ.pending_basis_overlay_bp,
+            0,
+            0,
+        );
+        state.prior_danger_score = runtime.current_danger_score;
+        runtime.has_prior_danger = true;
+        *econ = EconIntent::default();
+        runtime.missions_ready = false;
+        runtime.active_missions.clear();
+        runtime.spawn_budget = None;
+        runtime.spawns_emitted = false;
+        runtime.needs_budget_refresh = true;
     }
     state.leg_tick = state.leg_tick.saturating_add(1);
 }

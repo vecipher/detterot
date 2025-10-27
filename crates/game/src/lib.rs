@@ -16,6 +16,7 @@ use systems::director::{
 };
 
 pub const DEFAULT_FIXED_DT: f64 = 1.0 / 30.0;
+pub const MIN_FIXED_DT: f64 = 0.008_333_333_333_333_333;
 
 pub fn build_headless_app() -> App {
     let mut app = App::new();
@@ -50,8 +51,13 @@ pub fn request_new_leg(app: &mut App) {
         .queue_new_leg = true;
 }
 
+#[allow(clippy::float_arithmetic)]
 pub fn configure_fixed_dt(app: &mut App, seconds: f64) {
-    let clamped = seconds.max(1.0 / 120.0);
+    let clamped = if seconds < MIN_FIXED_DT {
+        MIN_FIXED_DT
+    } else {
+        seconds
+    };
     let duration = Duration::from_secs_f64(clamped);
     if let Some(mut strategy) = app.world_mut().get_resource_mut::<TimeUpdateStrategy>() {
         *strategy = TimeUpdateStrategy::ManualDuration(duration);

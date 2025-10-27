@@ -47,15 +47,17 @@ pub fn danger_score(
     cadence_per_min: u32,
     player_rating_0_100: u8,
 ) -> i32 {
-    let enemies_term = 1000 * budget.enemies as i32;
-    let density_term = 400 * density_per_10k as i32;
-    let cadence_term = 300 * cadence_per_min as i32;
-    let duration_term = 50 * mission_minutes as i32;
+    let enemies_term = i64::from(budget.enemies) * 1000;
+    let density_term = i64::from(density_per_10k) * 400;
+    let cadence_term = i64::from(cadence_per_min) * 300;
+    let duration_term = i64::from(mission_minutes) * 50;
     let raw = enemies_term + density_term + cadence_term + duration_term;
 
-    let rating = player_rating_0_100.min(100).max(0) as i32;
-    let factor = 1.0 + 0.2 * (rating - 50) as f32 / 50.0;
-    (raw as f32 * factor).round() as i32
+    let rating = i64::from(player_rating_0_100.clamp(0, 100));
+    let diff = rating - 50;
+    let factor_num = 250 + diff;
+    let numerator = raw * factor_num + 125;
+    (numerator / 250) as i32
 }
 
 pub fn danger_diff_sign(current: i32, prior: i32) -> i32 {
@@ -131,11 +133,7 @@ pub fn select_spawn_kind(cfg: &DirectorCfg, weather: Weather, rng: &mut DetRng) 
         .weather_types
         .as_ref()
         .and_then(|map| map.get(weather_key(weather)))
-        .or_else(|| cfg.types.as_ref());
-    let table = match table {
-        Some(table) => table,
-        None => return None,
-    };
+        .or(cfg.types.as_ref())?;
 
     let mut weighted: Vec<(&String, u64)> = table
         .iter()
@@ -160,6 +158,7 @@ pub fn select_spawn_kind(cfg: &DirectorCfg, weather: Weather, rng: &mut DetRng) 
     None
 }
 
+#[allow(clippy::float_arithmetic)]
 fn weight_to_int(weight: f32) -> u64 {
     if weight <= 0.0 {
         return 0;

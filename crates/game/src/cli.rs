@@ -314,26 +314,28 @@ fn apply_options(app: &mut App, options: &Options) -> Result<(), CliError> {
 }
 
 fn apply_meta(app: &mut App, meta: &repro::RecordMeta) -> Result<(), CliError> {
-    let mut options = Options::default();
-    options.world_seed = Some(
-        meta.world_seed
-            .parse()
-            .map_err(|_| CliError::InvalidValue("meta.world_seed", meta.world_seed.clone()))?,
-    );
-    options.link_id = Some(
-        meta.link_id
-            .parse()
-            .map_err(|_| CliError::InvalidValue("meta.link_id", meta.link_id.clone()))?,
-    );
-    options.weather = Some(meta.weather.clone());
     let pp = u16::try_from(meta.pp)
         .map_err(|_| CliError::InvalidValue("meta.pp", meta.pp.to_string()))?;
-    options.pp = Some(pp);
-    options.day = Some(meta.day);
-    options.mission_minutes = Some(meta.mission_minutes);
-    options.density_per_10k = Some(meta.density_per_10k);
-    options.cadence_per_min = Some(meta.cadence_per_min);
-    options.player_rating = Some(meta.player_rating);
+    let options = Options {
+        world_seed: Some(
+            meta.world_seed
+                .parse()
+                .map_err(|_| CliError::InvalidValue("meta.world_seed", meta.world_seed.clone()))?,
+        ),
+        link_id: Some(
+            meta.link_id
+                .parse()
+                .map_err(|_| CliError::InvalidValue("meta.link_id", meta.link_id.clone()))?,
+        ),
+        weather: Some(meta.weather.clone()),
+        pp: Some(pp),
+        day: Some(meta.day),
+        mission_minutes: Some(meta.mission_minutes),
+        density_per_10k: Some(meta.density_per_10k),
+        cadence_per_min: Some(meta.cadence_per_min),
+        player_rating: Some(meta.player_rating),
+        ..Options::default()
+    };
     apply_options(app, &options)?;
     let salt_str = meta.rng_salt.trim_start_matches("0x");
     let rng_salt = u64::from_str_radix(salt_str, 16)

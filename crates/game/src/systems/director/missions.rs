@@ -33,7 +33,7 @@ impl MissionTimer {
     fn new(cfg: MissionCfg, mut rng: DetRng, base: u32, window: u32, fail_offset: u32) -> Self {
         let window = window.max(1);
         let resolve_tick = base + (rng.next_u32() % window);
-        let success = rng.next_u32() % 2 == 0;
+        let success = rng.next_u32() & 1 == 0;
         let fail_tick = resolve_tick + fail_offset.max(1);
         Self {
             cfg,
