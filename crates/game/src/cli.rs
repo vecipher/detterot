@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use clap::{Parser, ValueEnum};
+use clap::{builder::BoolishValueParser, ArgAction, Parser, ValueEnum};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum RunMode {
@@ -31,7 +31,14 @@ struct RawCli {
     fixed_dt: Option<f64>,
     #[arg(long, default_value_t = false)]
     headless: bool,
-    #[arg(long, default_value_t = true)]
+    #[arg(
+        long,
+        default_value_t = true,
+        value_parser = BoolishValueParser::new(),
+        action = ArgAction::Set,
+        num_args = 0..=1,
+        default_missing_value = "true"
+    )]
     continue_after_mismatch: bool,
     #[arg(long, default_value_t = false)]
     debug_logs: bool,
@@ -74,6 +81,7 @@ impl CliOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use clap::Parser;
 
     #[test]
     fn validates_io_requirement() {
@@ -100,5 +108,22 @@ mod tests {
         };
         let parsed = CliOptions::from_raw(raw).unwrap();
         assert_eq!(parsed.mode, RunMode::Play);
+    }
+
+    #[test]
+    fn replay_mode_accepts_false_continue_after_mismatch() {
+        let raw = RawCli::try_parse_from([
+            "detterot",
+            "--mode",
+            "replay",
+            "--io",
+            "record.json",
+            "--fixed-dt",
+            "0.0333333333",
+            "--continue-after-mismatch",
+            "false",
+        ])
+        .unwrap();
+        assert!(!raw.continue_after_mismatch);
     }
 }
