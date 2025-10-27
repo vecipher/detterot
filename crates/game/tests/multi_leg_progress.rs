@@ -31,10 +31,12 @@ fn director_handles_multiple_legs() {
         "first leg should emit deterministic commands"
     );
 
-    let first_danger_diff = first_commands.iter().find_map(|command| match &command.kind {
-        CommandKind::Meter { key, .. } if key == "danger_diff" => Some(()),
-        _ => None,
-    });
+    let first_danger_diff = first_commands
+        .iter()
+        .find_map(|command| match &command.kind {
+            CommandKind::Meter { key, .. } if key == "danger_diff" => Some(()),
+            _ => None,
+        });
     assert!(
         first_danger_diff.is_none(),
         "first leg should not emit danger_diff meter"
