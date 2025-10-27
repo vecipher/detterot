@@ -93,12 +93,30 @@ pub fn apply_wheel_inputs(
             wheel.set_tool(&mut command_queue, tool);
         }
 
-        wheel.set_overwatch(&mut command_queue, keys.pressed(KeyCode::KeyO));
-        wheel.set_move_mode(&mut command_queue, keys.pressed(KeyCode::KeyM));
-        wheel.set_slowmo(&mut command_queue, keys.pressed(KeyCode::KeyL));
+        if keys.pressed(KeyCode::KeyO) {
+            wheel.set_overwatch(&mut command_queue, true);
+        } else if keys.just_released(KeyCode::KeyO) {
+            wheel.set_overwatch(&mut command_queue, false);
+        }
+
+        if keys.pressed(KeyCode::KeyM) {
+            wheel.set_move_mode(&mut command_queue, true);
+        } else if keys.just_released(KeyCode::KeyM) {
+            wheel.set_move_mode(&mut command_queue, false);
+        }
+
+        if keys.pressed(KeyCode::KeyL) {
+            wheel.set_slowmo(&mut command_queue, true);
+        } else if keys.just_released(KeyCode::KeyL) {
+            wheel.set_slowmo(&mut command_queue, false);
+        }
 
         if allow_hard_pause {
-            pause.set_hard_pause(&mut command_queue, keys.pressed(KeyCode::Space));
+            if keys.pressed(KeyCode::Space) {
+                pause.set_hard_pause(&mut command_queue, true);
+            } else if keys.just_released(KeyCode::Space) {
+                pause.set_hard_pause(&mut command_queue, false);
+            }
         }
     }
 }
