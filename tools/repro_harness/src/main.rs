@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use clap::Parser;
-use repro::{hash_record, Record};
+use repro::Record;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -15,7 +15,7 @@ fn main() {
     let data = std::fs::read_to_string(&args.replay).expect("record file");
     let rec: Record = serde_json::from_str(&data).expect("valid record");
     // For M0 we don't simulate; we just hash the record content.
-    let got = hash_record(&rec);
+    let got = rec.hash_hex().expect("hash computation");
     if let Some(expected_path) = args.assert_hash {
         let expected = std::fs::read_to_string(expected_path)
             .expect("hash file")

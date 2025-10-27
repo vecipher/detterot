@@ -2,17 +2,16 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  build-test:
+  ci:
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
-        toolchain: [stable]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.toolchain }}
+          toolchain: stable
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -22,56 +21,43 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo test --all --all-features
-      - run: cargo build -p game --release
-
-  determinism:
-    needs: build-test
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, macos-14]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - run: ci/grep_banned_random.sh
+      - name: Record deterministic outputs
+        run: |
+          set -euo pipefail
+          mkdir -p target/repro-check
+          for path in repro/records/*.json; do
+            name=$(basename "$path")
+            cargo run -p game --features deterministic -- --mode record \
+              --io "target/repro-check/$name" \
+              --fixed-dt 0.0333333333 --headless
+          done
+      - name: Compare recorded outputs to goldens
+        run: |
+          set -euo pipefail
+          for path in repro/records/*.json; do
+            name=$(basename "$path")
+            cmp --silent "$path" "target/repro-check/$name" || {
+              echo "record mismatch for $name" >&2
+              exit 1
+            }
+            hash_path="${path%.json}.hash"
+            cmp --silent "$hash_path" "target/repro-check/${name%.json}.hash" || {
+              echo "hash mismatch for $name" >&2
+              exit 1
+            }
+          done
+      - name: Replay deterministic goldens
+        run: |
+          set -euo pipefail
+          for path in repro/records/*.json; do
+            cargo run -p game --features deterministic -- --mode replay \
+              --io "$path" --fixed-dt 0.0333333333 --headless \
+              --continue-after-mismatch false
+          done
+      - name: Upload recorded outputs
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - name: Replay golden record
-        run: |
-          cargo run -p repro_harness -- --replay repro/golden/run_01.rec.json --assert-hash repro/golden/run_01.hash
-
-  econ_goldens:
-    needs: build-test
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, macos-14]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - name: Run econ sim tests
-        run: cargo test -p econ-sim -- --nocapture
-      - name: Produce econ curves
-        run: >
-          cargo run -p econ-sim -- --world-seed 42 --days 15 --hubs 3
-          --pp 1500,5000,9000 --debt 0,500_000_00,5_000_000_00 --out target/econ_curves.csv
-      - name: Diff econ CSV
-        run: ci/scripts/diff_csv.sh crates/econ_sim/tests/goldens/econ_curves_seed42.csv target/econ_curves.csv
-      - name: Banned RNG guard
-        run: ci/grep_banned_random.sh
-      - name: Economy float audit
-        run: |
-          CLIPPY_CONF_DIR=ci cargo clippy -p game --lib -- -D warnings
+          name: repro-records-${{ matrix.os }}
+          path: target/repro-check

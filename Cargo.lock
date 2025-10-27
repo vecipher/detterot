@@ -2352,13 +2352,16 @@ dependencies = [
 name = "game"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "avian3d",
  "bevy",
  "bevy_kira_audio",
  "blake3",
+ "clap",
  "log",
  "rand_core",
  "rand_xoshiro",
+ "repro",
  "serde",
  "serde_json",
  "tempfile",
