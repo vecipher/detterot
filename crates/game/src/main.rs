@@ -6,6 +6,8 @@ use avian3d::debug_render::PhysicsDebugPlugin;
 use avian3d::prelude::*;
 #[cfg(feature = "deterministic")]
 use bevy::app::TaskPoolPlugin;
+#[cfg(feature = "deterministic")]
+use bevy::prelude::TaskPoolOptions;
 use bevy::{
     color::LinearRgba,
     math::primitives::{Cuboid, Sphere},
