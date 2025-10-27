@@ -6,7 +6,8 @@ use game::scheduling::sets;
 use game::systems::command_queue::CommandQueue;
 use game::systems::director::input::{apply_wheel_inputs, WheelInputAction, WheelInputQueue};
 use game::systems::director::pause_wheel::{PauseState, Stance, ToolSlot, WheelState};
-use game::systems::director::LegContext;
+use game::systems::director::{DirectorPlugin, DirectorState, LegContext};
+use game::systems::economy::{Pp, RouteId, Weather};
 use repro::Command;
 
 #[test]
@@ -160,4 +161,95 @@ fn keyboard_input_updates_wheel_state() {
         Command::meter_at(0, "wheel_hard_pause", 1),
     ];
     assert_eq!(commands, expected);
+}
+
+fn build_director_app_for_pause_tests() -> App {
+    let mut app = App::new();
+
+    #[cfg(feature = "deterministic")]
+    {
+        use bevy::app::{PluginGroup, TaskPoolOptions, TaskPoolPlugin};
+        let plugins = bevy::MinimalPlugins.build().set(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions::with_num_threads(1),
+        });
+        app.add_plugins(plugins);
+    }
+
+    #[cfg(not(feature = "deterministic"))]
+    {
+        app.add_plugins(MinimalPlugins);
+    }
+
+    scheduling::configure(&mut app);
+    app.init_resource::<CommandQueue>();
+    app.insert_resource(test_leg_context());
+    app.add_plugins(DirectorPlugin);
+    app.finish();
+    app.update();
+    app
+}
+
+fn test_leg_context() -> LegContext {
+    LegContext {
+        world_seed: 0xD77E_2024_ABCD_0002,
+        link_id: RouteId(11),
+        day: 4,
+        weather: Weather::Clear,
+        pp: Pp(150),
+        density_per_10k: 5,
+        cadence_per_min: 90,
+        mission_minutes: 12,
+        player_rating: 40,
+        multiplayer: false,
+    }
+}
+
+fn step_director(app: &mut App) -> Vec<Command> {
+    let current_tick = app.world().resource::<DirectorState>().leg_tick;
+    {
+        let mut queue = app.world_mut().resource_mut::<CommandQueue>();
+        queue.begin_tick(current_tick);
+    }
+    app.world_mut().run_schedule(FixedUpdate);
+    app.world_mut().resource_mut::<CommandQueue>().drain()
+}
+
+#[test]
+fn hard_pause_freezes_ticks_and_commands() {
+    let mut app = build_director_app_for_pause_tests();
+
+    // Advance once to establish a baseline and ensure systems are running.
+    let _ = step_director(&mut app);
+
+    let tick_before_pause = app.world().resource::<DirectorState>().leg_tick;
+    {
+        let mut inputs = app.world_mut().resource_mut::<WheelInputQueue>();
+        inputs.push(WheelInputAction::SetHardPause(true));
+    }
+    let pause_commands = step_director(&mut app);
+    assert!(pause_commands.iter().any(|command| {
+        *command == Command::meter_at(tick_before_pause, "wheel_hard_pause", 1)
+    }));
+    let paused_tick = app.world().resource::<DirectorState>().leg_tick;
+
+    let commands_while_paused = step_director(&mut app);
+    assert!(
+        commands_while_paused.is_empty(),
+        "no commands should be emitted while paused"
+    );
+    assert_eq!(
+        app.world().resource::<DirectorState>().leg_tick,
+        paused_tick
+    );
+
+    {
+        let mut inputs = app.world_mut().resource_mut::<WheelInputQueue>();
+        inputs.push(WheelInputAction::SetHardPause(false));
+    }
+    let tick_before_resume = app.world().resource::<DirectorState>().leg_tick;
+    let resume_commands = step_director(&mut app);
+    assert!(resume_commands.iter().any(|command| {
+        *command == Command::meter_at(tick_before_resume, "wheel_hard_pause", 0)
+    }));
+    assert!(app.world().resource::<DirectorState>().leg_tick > paused_tick);
 }

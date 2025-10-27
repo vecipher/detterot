@@ -149,6 +149,7 @@ impl Plugin for DirectorPlugin {
                 FixedUpdate,
                 (
                     apply_wheel_inputs.in_set(sets::DETTEROT_Input),
+                    sync_pause_state.in_set(sets::DETTEROT_Director),
                     drive_director.in_set(sets::DETTEROT_Director),
                     run_mission_runtime.in_set(sets::DETTEROT_Missions),
                     dispatch_spawns.in_set(sets::DETTEROT_Spawns),
@@ -185,14 +186,31 @@ fn setup_director(
     memory.spawn_counter = 0;
 }
 
+fn sync_pause_state(mut state: ResMut<DirectorState>, pause: Res<PauseState>) {
+    match state.status {
+        LegStatus::Running | LegStatus::Paused => {
+            state.status = if pause.hard_paused_sp {
+                LegStatus::Paused
+            } else {
+                LegStatus::Running
+            };
+        }
+        _ => {}
+    }
+}
+
 fn drive_director(
     mut state: ResMut<DirectorState>,
     cfg: Res<DirectorConfigResource>,
     mut memory: ResMut<SpawnMemory>,
     context: Res<LegContext>,
     mut queue: ResMut<CommandQueue>,
+    pause: Res<PauseState>,
 ) {
-    if !matches!(state.status, LegStatus::Running) {
+    if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
+        return;
+    }
+    if pause.hard_paused_sp {
         return;
     }
 
@@ -235,8 +253,12 @@ fn run_mission_runtime(
     mut queue: ResMut<CommandQueue>,
     mut econ: ResMut<EconIntent>,
     state: Res<DirectorState>,
+    pause: Res<PauseState>,
 ) {
-    if !matches!(state.status, LegStatus::Running) {
+    if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
+        return;
+    }
+    if pause.hard_paused_sp {
         return;
     }
     runtime.tick_all(state.leg_tick, 1, queue.as_mut(), econ.as_mut());
@@ -247,9 +269,13 @@ fn dispatch_spawns(
     mut queue: ResMut<CommandQueue>,
     tables: Res<SpawnTypeTables>,
     state: Res<DirectorState>,
+    pause: Res<PauseState>,
 ) {
-    if !matches!(state.status, LegStatus::Running) {
+    if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
         memory.pending_budget = None;
+        return;
+    }
+    if pause.hard_paused_sp {
         return;
     }
 
@@ -276,7 +302,12 @@ fn dispatch_spawns(
 }
 
 fn physics_step(world: &mut World) {
-    if !matches!(world.resource::<DirectorState>().status, LegStatus::Running) {
+    let paused = world.resource::<PauseState>().hard_paused_sp;
+    let status = {
+        let state = world.resource::<DirectorState>();
+        state.status
+    };
+    if paused || !matches!(status, LegStatus::Running | LegStatus::Paused) {
         return;
     }
 
@@ -304,8 +335,9 @@ fn finalize_leg(
     mut state: ResMut<DirectorState>,
     mut econ: ResMut<EconIntent>,
     mut queue: ResMut<CommandQueue>,
+    pause: Res<PauseState>,
 ) {
-    if !matches!(state.status, LegStatus::Running) {
+    if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
         econ.clear();
         return;
     }
@@ -327,6 +359,8 @@ fn finalize_leg(
     if state.leg_tick >= 600 {
         state.status = LegStatus::Completed(Outcome::Success);
     }
-    state.leg_tick = state.leg_tick.saturating_add(1);
+    if !pause.hard_paused_sp {
+        state.leg_tick = state.leg_tick.saturating_add(1);
+    }
     econ.clear();
 }
