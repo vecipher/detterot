@@ -6,7 +6,12 @@ pub mod spawn;
 pub mod config;
 pub mod rng;
 
+use avian3d::prelude::{PhysicsSchedulePlugin, SubstepCount};
+#[cfg(feature = "deterministic")]
+use bevy::ecs::schedule::ExecutorKind;
+use bevy::ecs::schedule::{Schedule, ScheduleLabel};
 use bevy::prelude::*;
+use bevy::time::Fixed;
 use std::path::{Path, PathBuf};
 
 use crate::logs::m2;
@@ -95,6 +100,9 @@ pub struct SpawnMemory {
     pub last_spawned_enemies: u32,
 }
 
+#[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
+struct DirectorPhysicsSchedule;
+
 pub struct DirectorPlugin;
 
 impl Plugin for DirectorPlugin {
@@ -111,6 +119,16 @@ impl Plugin for DirectorPlugin {
             .collect();
         missions.sort_by(|a, b| a.0.cmp(&b.0));
         let catalog = MissionCatalog(missions);
+
+        app.add_schedule(Schedule::new(DirectorPhysicsSchedule));
+        app.add_plugins(PhysicsSchedulePlugin::new(DirectorPhysicsSchedule));
+
+        #[cfg(feature = "deterministic")]
+        {
+            app.edit_schedule(DirectorPhysicsSchedule, |schedule| {
+                schedule.set_executor_kind(ExecutorKind::SingleThreaded);
+            });
+        }
 
         app.insert_resource(DirectorConfigResource(cfg))
             .insert_resource(catalog)
@@ -129,7 +147,7 @@ impl Plugin for DirectorPlugin {
                     drive_director.in_set(sets::DETTEROT_Director),
                     run_mission_runtime.in_set(sets::DETTEROT_Missions),
                     dispatch_spawns.in_set(sets::DETTEROT_Spawns),
-                    physics_step_stub.in_set(sets::DETTEROT_PhysicsStep),
+                    physics_step.in_set(sets::DETTEROT_PhysicsStep),
                     finalize_leg.in_set(sets::DETTEROT_Cleanup),
                 ),
             );
@@ -252,7 +270,30 @@ fn dispatch_spawns(
     }
 }
 
-fn physics_step_stub() {}
+fn physics_step(world: &mut World) {
+    if !matches!(world.resource::<DirectorState>().status, LegStatus::Running) {
+        return;
+    }
+
+    let context = *world.resource::<LegContext>();
+    if let Some(mut substeps) = world.get_resource_mut::<SubstepCount>() {
+        let cadence = context.cadence_per_min;
+        let desired = if cadence == 0 {
+            1
+        } else {
+            ((cadence - 1) / 60).saturating_add(1)
+        };
+        let target = desired.clamp(1, 12);
+        if substeps.0 != target {
+            substeps.0 = target;
+        }
+    }
+
+    let fixed_delta = world.resource::<Time<Fixed>>().timestep();
+    world.resource_mut::<Time>().advance_by(fixed_delta);
+
+    world.run_schedule(DirectorPhysicsSchedule);
+}
 
 fn finalize_leg(
     mut state: ResMut<DirectorState>,
