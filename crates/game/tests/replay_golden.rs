@@ -78,5 +78,8 @@ fn golden_hashes_match() {
         }
     }
 
-    assert!(saw_non_positive_diff, "expected at least one non-positive danger_diff");
+    assert!(
+        saw_non_positive_diff,
+        "expected at least one non-positive danger_diff"
+    );
 }
