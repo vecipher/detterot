@@ -74,6 +74,7 @@ pub struct LegParameters {
     pub rng_salt: String,
     pub pp: Pp,
     pub prior_enemies: Option<u32>,
+    pub prior_danger_score: Option<i32>,
     pub mission_minutes: u32,
     pub density_per_10k: u32,
     pub cadence_per_min: u32,
@@ -91,6 +92,7 @@ impl Default for LegParameters {
             rng_salt: "default".to_string(),
             pp: Pp(120),
             prior_enemies: None,
+            prior_danger_score: None,
             mission_minutes: 12,
             density_per_10k: 90,
             cadence_per_min: 6,
@@ -306,6 +308,9 @@ fn director_bootstrap(
     state.weather = params.weather;
     state.link_id = route_id_from_label(&params.link_label);
 
+    let prior_score = params.prior_danger_score.unwrap_or(0);
+    state.prior_danger_score = prior_score;
+
     if let Some(budget) = runtime.spawn_budget {
         let score = danger_score(
             &budget,
@@ -314,7 +319,7 @@ fn director_bootstrap(
             params.cadence_per_min,
             params.player_rating,
         );
-        let diff = danger_diff_sign(score, state.prior_danger_score);
+        let diff = danger_diff_sign(score, prior_score);
         queue.meter("danger_score", score);
         queue.meter("danger_diff", diff);
         state.danger_diff = diff;
