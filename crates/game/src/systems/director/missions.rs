@@ -74,6 +74,19 @@ impl MissionKind {
     }
 }
 
+#[cfg(test)]
+impl MissionKind {
+    pub fn debug_elapsed_ticks(&self) -> u32 {
+        match self {
+            MissionKind::RainFlag(mission) => mission.elapsed,
+            MissionKind::Sourvault(_) => 0,
+            MissionKind::BreakChain(_) => 0,
+            MissionKind::Wayleave(_) => 0,
+            MissionKind::AnchorAudit(_) => 0,
+        }
+    }
+}
+
 pub fn resolve_result(result: MissionResult, queue: &mut CommandQueue, econ: &mut EconIntent) {
     match result {
         MissionResult::Success {

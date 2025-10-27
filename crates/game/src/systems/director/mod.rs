@@ -167,6 +167,7 @@ struct ActiveMission {
 struct WheelScript {
     events: VecDeque<WheelEvent>,
     seeded: bool,
+    script_tick: u32,
 }
 
 struct WheelEvent {
@@ -329,7 +330,7 @@ fn director_bootstrap(
 }
 
 fn advance_leg_tick(mut state: ResMut<DirectorState>) {
-    if matches!(state.status, LegStatus::Running | LegStatus::Paused) {
+    if matches!(state.status, LegStatus::Running) {
         state.leg_tick = state.leg_tick.saturating_add(1);
     }
 }
@@ -342,7 +343,7 @@ fn missions_tick(
     mut econ: ResMut<EconIntent>,
     log_settings: Res<LogSettings>,
 ) {
-    if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
+    if !matches!(state.status, LegStatus::Running) {
         return;
     }
 
@@ -407,7 +408,7 @@ fn drive_wheel_state(
     mut wheel: ResMut<WheelState>,
     mut pause: ResMut<PauseState>,
     mut queue: ResMut<CommandQueue>,
-    state: Res<DirectorState>,
+    mut state: ResMut<DirectorState>,
 ) {
     if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
         return;
@@ -450,8 +451,14 @@ fn drive_wheel_state(
         script.seeded = true;
     }
 
+    if state.leg_tick > script.script_tick {
+        script.script_tick = state.leg_tick;
+    } else {
+        script.script_tick = script.script_tick.saturating_add(1);
+    }
+
     while let Some(event) = script.events.front() {
-        if event.tick > state.leg_tick {
+        if event.tick > script.script_tick {
             break;
         }
         let event = script.events.pop_front().unwrap();
@@ -486,6 +493,11 @@ fn drive_wheel_state(
             WheelAction::Pause(value) => {
                 pause.hard_paused_sp = value;
                 queue.meter("wheel_pause", bool_to_i32(pause.hard_paused_sp));
+                state.status = if value {
+                    LegStatus::Paused
+                } else {
+                    LegStatus::Running
+                };
             }
         }
     }
@@ -738,5 +750,66 @@ mod tests {
         assert_eq!(danger_diff_sign(10, 5), 1);
         assert_eq!(danger_diff_sign(5, 10), -1);
         assert_eq!(danger_diff_sign(7, 7), 0);
+    }
+
+    #[test]
+    fn pause_freezes_ticks_and_missions() {
+        use bevy::time::{Fixed, Time, TimeUpdateStrategy};
+        use bevy::MinimalPlugins;
+        use std::time::Duration;
+
+        let mut app = App::new();
+        app.insert_resource(LegParameters::default());
+        app.insert_resource(LogSettings { enabled: false });
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
+            0.033_333_333_3,
+        )));
+        app.insert_resource(Time::<Fixed>::from_seconds(0.033_333_333_3));
+        app.add_plugins(MinimalPlugins);
+        app.add_plugins(DirectorPlugin);
+
+        let mut snapshot = None;
+
+        for _ in 0..200 {
+            app.update();
+            let status = {
+                let state = app.world().resource::<DirectorState>();
+                state.status
+            };
+            if status == LegStatus::Paused {
+                let (tick, elapsed) = {
+                    let state = app.world().resource::<DirectorState>();
+                    let runtime = app.world().resource::<DirectorRuntime>();
+                    let elapsed = runtime
+                        .active
+                        .as_ref()
+                        .map(|mission| mission.mission.debug_elapsed_ticks())
+                        .unwrap_or(0);
+                    (state.leg_tick, elapsed)
+                };
+                snapshot = Some((tick, elapsed));
+                break;
+            }
+        }
+
+        let (paused_tick, paused_elapsed) = snapshot.expect("pause event triggered");
+
+        for _ in 0..5 {
+            app.update();
+            {
+                let state = app.world().resource::<DirectorState>();
+                assert_eq!(state.status, LegStatus::Paused);
+                assert_eq!(state.leg_tick, paused_tick);
+            }
+            {
+                let runtime = app.world().resource::<DirectorRuntime>();
+                let elapsed = runtime
+                    .active
+                    .as_ref()
+                    .map(|mission| mission.mission.debug_elapsed_ticks())
+                    .unwrap_or(0);
+                assert_eq!(elapsed, paused_elapsed);
+            }
+        }
     }
 }
