@@ -8,3 +8,10 @@ debug = 0
 lto = "thin"
 codegen-units = 1
 split-debuginfo = "packed"
+
+[profile.deterministic]
+inherits = "release"
+debug = 0
+lto = "thin"
+codegen-units = 1
+split-debuginfo = "packed"

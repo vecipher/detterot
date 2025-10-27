@@ -13,6 +13,8 @@ Foundation for the Detterot prototype. Launch the Bevy game from VS Code (F5) to
 ## Tooling
 - `cargo fmt`, `cargo clippy -D warnings`, and `cargo test` must pass before merging.
 - `tools/repro_harness` replays golden records and validates hashes for determinism checks.
+- Build reproducible release artifacts with `cargo build --profile deterministic --features deterministic`; the workspace's
+  deterministic profile mirrors the release settings and locks codegen for bit-for-bit binaries.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for etiquette, performance expectations, and the economy invariants CI enforces.
 
