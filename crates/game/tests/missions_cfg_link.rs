@@ -1,5 +1,5 @@
 use game::systems::director::config::MissionCfg;
-use game::systems::director::missions::{Mission, MissionResult, RainFlagUplink};
+use game::systems::director::missions::{Mission, MissionResult, RainFlag};
 
 fn mission_cfg() -> MissionCfg {
     MissionCfg {
@@ -13,7 +13,7 @@ fn mission_cfg() -> MissionCfg {
 #[test]
 fn mission_result_reflects_config() {
     let cfg = mission_cfg();
-    let mut mission = RainFlagUplink::default();
+    let mut mission = RainFlag::default();
     mission.init(123, &cfg);
     let mut result = None;
     for _ in 0..400 {

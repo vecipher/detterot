@@ -1,7 +1,6 @@
 use game::systems::director::config::MissionCfg;
 use game::systems::director::missions::{
-    AnchorAudit, BreakTheChain, Mission, MissionResult, RainFlagUplink, SourvaultEvac,
-    WayleaveDefault,
+    AnchorAudit, BreakTheChain, Mission, MissionResult, RainFlag, Sourvault, Wayleave,
 };
 
 fn sample_cfg() -> MissionCfg {
@@ -29,17 +28,17 @@ fn missions_produce_consistent_results() {
     let cfg = sample_cfg();
     let seeds = [1_u64, 42, 1337];
     for &seed in &seeds {
-        let a = run_mission::<RainFlagUplink>(seed, &cfg);
-        let b = run_mission::<RainFlagUplink>(seed, &cfg);
+        let a = run_mission::<RainFlag>(seed, &cfg);
+        let b = run_mission::<RainFlag>(seed, &cfg);
         assert_eq!(a, b);
-        let a = run_mission::<SourvaultEvac>(seed, &cfg);
-        let b = run_mission::<SourvaultEvac>(seed, &cfg);
+        let a = run_mission::<Sourvault>(seed, &cfg);
+        let b = run_mission::<Sourvault>(seed, &cfg);
         assert_eq!(a, b);
         let a = run_mission::<BreakTheChain>(seed, &cfg);
         let b = run_mission::<BreakTheChain>(seed, &cfg);
         assert_eq!(a, b);
-        let a = run_mission::<WayleaveDefault>(seed, &cfg);
-        let b = run_mission::<WayleaveDefault>(seed, &cfg);
+        let a = run_mission::<Wayleave>(seed, &cfg);
+        let b = run_mission::<Wayleave>(seed, &cfg);
         assert_eq!(a, b);
         let a = run_mission::<AnchorAudit>(seed, &cfg);
         let b = run_mission::<AnchorAudit>(seed, &cfg);
