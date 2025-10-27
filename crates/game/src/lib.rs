@@ -169,18 +169,7 @@ fn simulate_ticks(
 
 fn build_app(options: &CliOptions, context: LegContext) -> App {
     let mut app = App::new();
-    #[cfg(feature = "deterministic")]
-    {
-        use bevy::app::{PluginGroup, TaskPoolOptions, TaskPoolPlugin};
-        let plugins = MinimalPlugins.build().set(TaskPoolPlugin {
-            task_pool_options: TaskPoolOptions::with_num_threads(1),
-        });
-        app.add_plugins(plugins);
-    }
-    #[cfg(not(feature = "deterministic"))]
-    {
-        app.add_plugins(MinimalPlugins);
-    }
+    add_core_plugins(&mut app, options);
     scheduling::configure(&mut app);
     {
         let dt = options.effective_fixed_dt();
@@ -191,6 +180,59 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
     app.insert_resource(context);
     app.add_plugins(DirectorPlugin);
     app
+}
+
+/// Adds the core plugin groups for the simulation, taking the headless flag into account.
+///
+/// Headless runs stick to the minimal Bevy set so that no windowing or audio backends are
+/// initialised in environments without a display. Whenever we add plugins that spawn windows,
+/// they must stay behind the same `!options.headless` guard to keep CI and server runs healthy.
+fn add_core_plugins(app: &mut App, options: &CliOptions) {
+    if options.headless {
+        add_headless_plugins(app);
+    } else {
+        add_windowed_plugins(app);
+    }
+}
+
+fn add_headless_plugins(app: &mut App) {
+    add_minimal_plugins(app);
+}
+
+fn add_windowed_plugins(app: &mut App) {
+    // Non-headless runs get the same minimal foundation as our deterministic harness, plus a
+    // placeholder plugin that marks where window/audio stacks will hook in once we support them.
+    add_minimal_plugins(app);
+    app.add_plugins(WindowingPlaceholderPlugin);
+}
+
+fn add_minimal_plugins(app: &mut App) {
+    use bevy::app::PluginGroup;
+
+    let plugins = MinimalPlugins.build();
+    let plugins = configure_task_pool(plugins);
+    app.add_plugins(plugins);
+}
+
+#[derive(Default)]
+struct WindowingPlaceholderPlugin;
+
+impl Plugin for WindowingPlaceholderPlugin {
+    fn build(&self, _app: &mut App) {}
+}
+
+#[cfg(feature = "deterministic")]
+fn configure_task_pool(builder: bevy::app::PluginGroupBuilder) -> bevy::app::PluginGroupBuilder {
+    use bevy::app::{TaskPoolOptions, TaskPoolPlugin};
+
+    builder.set(TaskPoolPlugin {
+        task_pool_options: TaskPoolOptions::with_num_threads(1),
+    })
+}
+
+#[cfg(not(feature = "deterministic"))]
+fn configure_task_pool(builder: bevy::app::PluginGroupBuilder) -> bevy::app::PluginGroupBuilder {
+    builder
 }
 
 fn simulation_ticks() -> u32 {
@@ -260,5 +302,37 @@ fn parse_weather_string(value: &str) -> Result<Weather> {
         "Fog" => Ok(Weather::Fog),
         "Windy" => Ok(Weather::Windy),
         other => Err(anyhow!("unknown weather: {other}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn default_context(options: &CliOptions) -> LegContext {
+        leg_context_from_options(options)
+    }
+
+    #[test]
+    fn headless_mode_skips_window_plugin() {
+        let mut options = CliOptions::for_mode(Mode::Play);
+        options.headless = true;
+        let context = default_context(&options);
+
+        let app = build_app(&options, context);
+
+        assert!(options.headless);
+        assert!(!app.is_plugin_added::<WindowingPlaceholderPlugin>());
+    }
+
+    #[test]
+    fn windowed_mode_registers_window_plugin() {
+        let options = CliOptions::for_mode(Mode::Play);
+        let context = default_context(&options);
+
+        let app = build_app(&options, context);
+
+        assert!(!options.headless);
+        assert!(app.is_plugin_added::<WindowingPlaceholderPlugin>());
     }
 }
