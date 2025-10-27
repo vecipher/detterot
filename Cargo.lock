@@ -2352,19 +2352,23 @@ dependencies = [
 name = "game"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "avian3d",
  "bevy",
  "bevy_kira_audio",
  "blake3",
+ "clap",
  "log",
  "rand_core",
  "rand_xoshiro",
+ "repro",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.17",
  "toml",
  "worldgen",
+ "wyhash",
 ]
 
 [[package]]
@@ -5644,6 +5648,15 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 [[package]]
 name = "worldgen"
 version = "0.1.0"
+
+[[package]]
+name = "wyhash"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca4d373340c479fd1e779f7a763acee85da3e423b1a9a9acccf97babcc92edbb"
+dependencies = [
+ "rand_core",
+]
 
 [[package]]
 name = "x11-dl"

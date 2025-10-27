@@ -1,0 +1,64 @@
+[[cases]]
+file = "leg_seed_01.json"
+world_seed = "world_seed_low_clear"
+link_id = "clear_low"
+weather = "Clear"
+rng_salt = "salt_low"
+pp = 0
+prior_enemies = 0
+mission_minutes = 8
+density_per_10k = 55
+cadence_per_min = 4
+player_rating = 40
+
+[[cases]]
+file = "leg_seed_02.json"
+world_seed = "world_seed_med_clear"
+link_id = "clear_med"
+weather = "Clear"
+rng_salt = "salt_med"
+pp = 200
+prior_enemies = 8
+mission_minutes = 10
+density_per_10k = 65
+cadence_per_min = 5
+player_rating = 50
+
+[[cases]]
+file = "leg_seed_03.json"
+world_seed = "world_seed_high_clear"
+link_id = "clear_high"
+weather = "Clear"
+rng_salt = "salt_high"
+pp = 400
+prior_enemies = 16
+mission_minutes = 12
+density_per_10k = 75
+cadence_per_min = 6
+player_rating = 60
+
+[[cases]]
+file = "leg_seed_04.json"
+world_seed = "world_seed_med_fog"
+link_id = "fog_med"
+weather = "Fog"
+rng_salt = "salt_fog_med"
+pp = 200
+prior_enemies = 12
+mission_minutes = 11
+density_per_10k = 85
+cadence_per_min = 7
+player_rating = 55
+
+[[cases]]
+file = "leg_seed_05.json"
+world_seed = "world_seed_high_fog"
+link_id = "fog_high"
+weather = "Fog"
+rng_salt = "salt_fog_high"
+pp = 400
+prior_enemies = 20
+mission_minutes = 14
+density_per_10k = 95
+cadence_per_min = 8
+player_rating = 65
