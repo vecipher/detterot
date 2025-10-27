@@ -207,7 +207,7 @@ impl ReplaySession {
             // tick > current.tick but nothing left to consume
         }
 
-        while let Some((expected_tick, _)) = self.expected.front() {
+        if let Some((expected_tick, _)) = self.expected.front() {
             if *expected_tick < tick {
                 let (late_tick, exp) = self.expected.pop_front().unwrap();
                 return Some((late_tick, exp, Vec::new()));
@@ -232,7 +232,6 @@ impl ReplaySession {
                 }
                 return None;
             }
-            break;
         }
 
         if commands.is_empty() {
