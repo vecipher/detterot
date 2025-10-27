@@ -24,10 +24,11 @@ fn regenerate_golden_records() {
         let mut params = LegParameters::default();
         runtime::goldens::apply_case(&mut params, &case).expect("apply manifest case");
 
-        let mut cfg = HeadlessConfig::default();
-        cfg.dt = case.fixed_dt.unwrap_or(DEFAULT_DT);
-        cfg.max_ticks = case.max_ticks.unwrap_or(DEFAULT_MAX_TICKS);
-        cfg.logs_enabled = false;
+        let cfg = HeadlessConfig {
+            dt: case.fixed_dt.unwrap_or(DEFAULT_DT),
+            max_ticks: case.max_ticks.unwrap_or(DEFAULT_MAX_TICKS),
+            logs_enabled: false,
+        };
 
         let record = runtime::record_leg(&params, &cfg).expect("headless run succeeds");
         let canonical = record
