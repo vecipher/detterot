@@ -2,28 +2,18 @@ use bevy::prelude::Resource;
 
 use crate::systems::command_queue::CommandQueue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Stance {
+    #[default]
     Brace,
     Vault,
 }
 
-impl Default for Stance {
-    fn default() -> Self {
-        Stance::Brace
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum ToolSlot {
+    #[default]
     A,
     B,
-}
-
-impl Default for ToolSlot {
-    fn default() -> Self {
-        ToolSlot::A
-    }
 }
 
 #[derive(Resource, Default, Debug)]

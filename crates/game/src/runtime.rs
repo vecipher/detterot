@@ -158,12 +158,10 @@ impl ReplaySession {
         tick: u32,
         commands: &[Command],
     ) -> Option<(u32, Vec<Command>, Vec<Command>)> {
-        while let Some((expected_tick, _)) = expected.front() {
+        if let Some((expected_tick, _)) = expected.front() {
             if *expected_tick < tick {
                 let (late_tick, exp) = expected.pop_front().unwrap();
                 return Some((late_tick, exp, Vec::new()));
-            } else {
-                break;
             }
         }
         if let Some((expected_tick, _)) = expected.front() {

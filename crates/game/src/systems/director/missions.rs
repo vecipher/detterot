@@ -91,7 +91,7 @@ pub fn resolve_result(result: MissionResult, queue: &mut CommandQueue, econ: &mu
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct RainFlagUplink {
     segments: Vec<RainSegment>,
     current: usize,
@@ -99,19 +99,6 @@ pub struct RainFlagUplink {
     fail_limit: u32,
     resolved: bool,
     cfg: MissionCfg,
-}
-
-impl Default for RainFlagUplink {
-    fn default() -> Self {
-        Self {
-            segments: Vec::new(),
-            current: 0,
-            elapsed: 0,
-            fail_limit: 0,
-            resolved: false,
-            cfg: MissionCfg::default(),
-        }
-    }
 }
 
 impl fmt::Debug for RainFlagUplink {
@@ -344,7 +331,7 @@ impl Mission for BreakTheChain {
         if roll < 45 {
             self.destroyed += 1;
         }
-        if roll % 23 == 0 {
+        if roll.is_multiple_of(23u32) {
             self.destroyed += 1;
         }
         if self.destroyed >= self.targets {
@@ -525,7 +512,8 @@ impl Mission for AnchorAudit {
         self.hazard_timer = self.hazard_timer.saturating_add(dt_ticks);
         if self.hazard_timer >= self.hazard_spacing {
             self.hazard_timer = 0;
-            if self.rng.next_u32() % 5 == 0 {
+            let roll = self.rng.next_u32();
+            if roll.is_multiple_of(5u32) {
                 self.hazard_hits += 1;
             }
             if self.hazard_hits > self.hazard_budget {

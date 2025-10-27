@@ -140,7 +140,7 @@ pub struct LogSettings {
     pub enabled: bool,
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Default, Clone)]
 struct DirectorRuntime {
     cfg: Option<DirectorCfg>,
     mission_names: Vec<String>,
@@ -152,23 +152,6 @@ struct DirectorRuntime {
     spawn_seed: u64,
     initialized: bool,
     post_logged: bool,
-}
-
-impl Default for DirectorRuntime {
-    fn default() -> Self {
-        Self {
-            cfg: None,
-            mission_names: Vec::new(),
-            active_index: 0,
-            active: None,
-            spawn_budget: None,
-            prior_enemies: None,
-            spawn_emitted: false,
-            spawn_seed: 0,
-            initialized: false,
-            post_logged: false,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -370,7 +353,7 @@ fn missions_tick(
         }
     }
 
-    if resolved_outcome.is_some() {
+    if let Some(outcome) = resolved_outcome {
         runtime.active_index += 1;
         if let Some(cfg) = runtime.cfg.as_ref() {
             runtime.active =
@@ -379,7 +362,7 @@ fn missions_tick(
             runtime.active = None;
         }
         if runtime.active.is_none() {
-            state.status = LegStatus::Completed(resolved_outcome.unwrap());
+            state.status = LegStatus::Completed(outcome);
         }
     }
 
