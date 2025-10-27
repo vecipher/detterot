@@ -18,6 +18,8 @@ use bevy::{
 use bevy_kira_audio::prelude::*;
 use repro::Record;
 
+const DEFAULT_PLAY_FIXED_DT: f64 = 0.033_333_333_3;
+
 mod diagnostics;
 mod perf_scene;
 mod plugins;
@@ -94,7 +96,7 @@ fn run_play(options: CliOptions) -> Result<()> {
     #[cfg(feature = "audio")]
     app.add_systems(Startup, play_boot_sound);
     app.add_systems(Update, drop_commands);
-    app.insert_resource(Time::<Fixed>::from_seconds(1.0 / 30.0));
+    app.insert_resource(Time::<Fixed>::from_seconds(DEFAULT_PLAY_FIXED_DT));
     app.run();
     Ok(())
 }
