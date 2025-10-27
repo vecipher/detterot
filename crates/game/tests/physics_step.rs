@@ -2,6 +2,8 @@ use avian3d::prelude::{Physics, SubstepCount};
 use bevy::prelude::*;
 use bevy::time::{Fixed, Time as BevyTime};
 
+const FIXED_STEP_SECONDS: f64 = f64::from_bits(0x3F91_1111_1111_1111);
+
 use game::scheduling;
 use game::systems::command_queue::CommandQueue;
 use game::systems::director::{DirectorPlugin, DirectorState, LegContext};
@@ -27,7 +29,7 @@ fn build_director_app() -> App {
     scheduling::configure(&mut app);
     {
         let mut fixed = app.world_mut().resource_mut::<BevyTime<Fixed>>();
-        *fixed = BevyTime::<Fixed>::from_seconds(1.0 / 60.0);
+        *fixed = BevyTime::<Fixed>::from_seconds(FIXED_STEP_SECONDS);
     }
 
     app.init_resource::<CommandQueue>();
