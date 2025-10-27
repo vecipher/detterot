@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::Result as AnyResult;
 use bevy::prelude::*;
+use bevy::time::Virtual;
 use blake3::Hasher as Blake3Hasher;
 use log::warn;
 use repro::{DetRng, RecordMeta};
@@ -205,7 +206,7 @@ impl Plugin for DirectorPlugin {
         use scheduling::sets;
         app.add_systems(
             FixedUpdate,
-            (director_bootstrap, advance_leg_tick, drive_wheel_state)
+            (director_bootstrap, advance_leg_tick, drive_wheel_state, apply_slowmo)
                 .chain()
                 .in_set(sets::DETTEROT_Director),
         );
@@ -500,6 +501,26 @@ fn drive_wheel_state(
                 };
             }
         }
+    }
+}
+
+fn apply_slowmo(
+    wheel: Res<WheelState>,
+    pause: Res<PauseState>,
+    mut time: ResMut<Time<Virtual>>,
+) {
+    let target_speed = if pause.hard_paused_sp {
+        0.0
+    } else if wheel.slowmo_enabled {
+        0.8
+    } else {
+        1.0
+    };
+
+    let current_speed = time.relative_speed();
+
+    if (current_speed - target_speed).abs() > f32::EPSILON {
+        time.set_relative_speed(target_speed);
     }
 }
 
@@ -811,5 +832,71 @@ mod tests {
                 assert_eq!(elapsed, paused_elapsed);
             }
         }
+    }
+
+    #[test]
+    fn slowmo_adjusts_time_speed_without_affecting_fixed_ticks() {
+        use bevy::time::{Fixed, Time, TimeUpdateStrategy};
+        use bevy::MinimalPlugins;
+        use std::time::Duration;
+
+        let mut app = App::new();
+        app.insert_resource(LegParameters::default());
+        app.insert_resource(LogSettings { enabled: false });
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
+            0.033_333_333_3,
+        )));
+        app.insert_resource(Time::<Fixed>::from_seconds(0.033_333_333_3));
+        app.add_plugins(MinimalPlugins);
+        app.add_plugins(DirectorPlugin);
+
+        let mut slowmo_triggered = false;
+
+        for _ in 0..200 {
+            app.update();
+
+            let slowmo_enabled = {
+                let wheel = app.world().resource::<WheelState>();
+                wheel.slowmo_enabled
+            };
+
+            let current_speed = {
+                let time = app.world().resource::<Time<Virtual>>();
+                time.relative_speed()
+            };
+
+            if slowmo_enabled {
+                slowmo_triggered = true;
+                assert!((current_speed - 0.8).abs() < f32::EPSILON);
+
+                let fixed_timestep = {
+                    let fixed_time = app.world().resource::<Time<Fixed>>();
+                    fixed_time.timestep()
+                };
+
+                let initial_tick = {
+                    let state = app.world().resource::<DirectorState>();
+                    state.leg_tick
+                };
+
+                for _ in 0..10 {
+                    app.update();
+
+                    let time = app.world().resource::<Time<Virtual>>();
+                    assert!((time.relative_speed() - 0.8).abs() < f32::EPSILON);
+                }
+
+                let state = app.world().resource::<DirectorState>();
+                assert!(state.leg_tick > initial_tick);
+
+                let fixed_time = app.world().resource::<Time<Fixed>>();
+                assert_eq!(fixed_time.timestep(), fixed_timestep);
+                break;
+            } else {
+                assert!((current_speed - 1.0).abs() < f32::EPSILON);
+            }
+        }
+
+        assert!(slowmo_triggered, "slowmo toggle event triggered");
     }
 }
