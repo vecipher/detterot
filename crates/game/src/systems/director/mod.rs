@@ -347,9 +347,11 @@ fn physics_step(world: &mut World) {
         base_delta
     };
 
-    if let Some(mut queue) = world.get_resource_mut::<CommandQueue>() {
-        let nanos = effective_delta.as_nanos().min(i32::MAX as u128) as i32;
-        queue.meter("physics_fixed_dt_ns", nanos);
+    if wheel.slowmo_enabled {
+        if let Some(mut queue) = world.get_resource_mut::<CommandQueue>() {
+            let nanos = effective_delta.as_nanos().min(i32::MAX as u128) as i32;
+            queue.meter("physics_fixed_dt_ns", nanos);
+        }
     }
 
     if let Some(mut substeps) = world.get_resource_mut::<SubstepCount>() {
@@ -364,9 +366,21 @@ fn physics_step(world: &mut World) {
         }
     }
 
+    if wheel.slowmo_enabled {
+        world
+            .resource_mut::<Time<Fixed>>()
+            .set_timestep(effective_delta);
+    }
+
     world.resource_mut::<Time>().advance_by(effective_delta);
 
     world.run_schedule(DirectorPhysicsSchedule);
+
+    if wheel.slowmo_enabled {
+        world
+            .resource_mut::<Time<Fixed>>()
+            .set_timestep(base_delta);
+    }
 }
 
 fn finalize_leg(
