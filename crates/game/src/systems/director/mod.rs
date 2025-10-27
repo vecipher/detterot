@@ -377,9 +377,7 @@ fn physics_step(world: &mut World) {
     world.run_schedule(DirectorPhysicsSchedule);
 
     if wheel.slowmo_enabled {
-        world
-            .resource_mut::<Time<Fixed>>()
-            .set_timestep(base_delta);
+        world.resource_mut::<Time<Fixed>>().set_timestep(base_delta);
     }
 }
 
