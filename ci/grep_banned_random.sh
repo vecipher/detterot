@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-target_dir="crates/game/src/systems/economy"
-if [ ! -d "$target_dir" ]; then
-  echo "missing $target_dir" >&2
-  exit 1
-fi
+targets=("crates/game/src")
+pattern='thread_rng|rand::random|std::time::Instant'
 
-if grep -R -n -E "thread_rng|rand::random" "$target_dir" >/dev/null; then
-  echo "banned RNG APIs found in $target_dir" >&2
-  grep -R -n -E "thread_rng|rand::random" "$target_dir"
+if rg -n -S "$pattern" "${targets[@]}" >/dev/null; then
+  echo "banned nondeterministic APIs found in gameplay code" >&2
+  rg -n -S "$pattern" "${targets[@]}"
   exit 1
 fi

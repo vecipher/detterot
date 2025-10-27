@@ -2,7 +2,7 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  build-test:
+  checks:
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
@@ -22,10 +22,9 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo test --all --all-features
-      - run: cargo build -p game --release
 
   determinism:
-    needs: build-test
+    needs: checks
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
@@ -41,12 +40,45 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - name: Replay golden record
+      - name: Record deterministic goldens
         run: |
-          cargo run -p repro_harness -- --replay repro/golden/run_01.rec.json --assert-hash repro/golden/run_01.hash
+          set -euo pipefail
+          mkdir -p target/m2-records
+          record() {
+            cargo run -p game --features deterministic -- --mode record --io "target/m2-records/$1.json" \
+              --fixed-dt 0.0333333333 --headless --world-seed "$2" --link-id "$3" \
+              --weather "$4" --pp "$5" --day 1
+          }
+          record leg_seed_01 1001 1 Clear 5000
+          record leg_seed_02 1002 2 Fog 4200
+          record leg_seed_03 1003 3 Rains 3100
+          record leg_seed_04 1004 4 Windy 6000
+          record leg_seed_05 1005 5 Clear 2000
+      - name: Compare hashes against checked-in goldens
+        run: |
+          set -euo pipefail
+          for idx in 01 02 03 04 05; do
+            diff -u "repro/records/leg_seed_${idx}.hash" "target/m2-records/leg_seed_${idx}.hash"
+          done
+      - name: Replay checked-in goldens
+        run: |
+          set -euo pipefail
+          for idx in 01 02 03 04 05; do
+            cargo run -p game --features deterministic -- --mode replay \
+              --io "repro/records/leg_seed_${idx}.json" --fixed-dt 0.0333333333 \
+              --headless --stop-on-mismatch
+          done
+      - name: Determinism guard
+        run: ci/grep_banned_random.sh
+      - name: Upload recorded outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-records-${{ matrix.os }}
+          path: target/m2-records
 
   econ_goldens:
-    needs: build-test
+    needs: checks
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
@@ -70,8 +102,6 @@ jobs:
           --pp 1500,5000,9000 --debt 0,500_000_00,5_000_000_00 --out target/econ_curves.csv
       - name: Diff econ CSV
         run: ci/scripts/diff_csv.sh crates/econ_sim/tests/goldens/econ_curves_seed42.csv target/econ_curves.csv
-      - name: Banned RNG guard
-        run: ci/grep_banned_random.sh
       - name: Economy float audit
         run: |
           CLIPPY_CONF_DIR=ci cargo clippy -p game --lib -- -D warnings
