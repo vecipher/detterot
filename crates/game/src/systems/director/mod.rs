@@ -1,4 +1,5 @@
 mod econ_intent;
+pub mod input;
 pub mod missions;
 pub mod pause_wheel;
 pub mod spawn;
@@ -20,6 +21,7 @@ use crate::systems::command_queue::CommandQueue;
 use crate::systems::economy::{Pp, RouteId, Weather};
 
 pub use econ_intent::EconIntent;
+pub use input::{apply_wheel_inputs, WheelInputAction, WheelInputQueue};
 pub use missions::{MissionResult, MissionRuntime};
 pub use pause_wheel::{PauseState, Stance, ToolSlot, WheelState};
 pub use spawn::{
@@ -88,6 +90,7 @@ pub struct LegContext {
     pub cadence_per_min: u32,
     pub mission_minutes: u32,
     pub player_rating: u8,
+    pub multiplayer: bool,
 }
 
 #[derive(Resource, Default, Clone, Copy)]
@@ -138,12 +141,14 @@ impl Plugin for DirectorPlugin {
             .init_resource::<EconIntent>()
             .init_resource::<WheelState>()
             .init_resource::<PauseState>()
+            .init_resource::<WheelInputQueue>()
             .init_resource::<SpawnMemory>()
             .init_resource::<LegContext>()
             .add_systems(Startup, setup_director)
             .add_systems(
                 FixedUpdate,
                 (
+                    apply_wheel_inputs.in_set(sets::DETTEROT_Input),
                     drive_director.in_set(sets::DETTEROT_Director),
                     run_mission_runtime.in_set(sets::DETTEROT_Missions),
                     dispatch_spawns.in_set(sets::DETTEROT_Spawns),

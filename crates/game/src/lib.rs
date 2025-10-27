@@ -212,6 +212,7 @@ fn add_minimal_plugins(app: &mut App) {
     let plugins = MinimalPlugins.build();
     let plugins = configure_task_pool(plugins);
     app.add_plugins(plugins);
+    app.add_plugins(bevy::input::InputPlugin);
 }
 
 #[derive(Default)]
@@ -250,6 +251,7 @@ fn leg_context_from_options(options: &CliOptions) -> LegContext {
         cadence_per_min: options.cadence_per_min(),
         mission_minutes: options.mission_minutes(),
         player_rating: options.player_rating(),
+        multiplayer: false,
     }
 }
 

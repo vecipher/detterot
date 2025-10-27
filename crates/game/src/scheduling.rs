@@ -5,6 +5,9 @@ pub mod sets {
     use bevy::prelude::SystemSet;
 
     #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+    pub struct DETTEROT_Input;
+
+    #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
     pub struct DETTEROT_Director;
 
     #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -24,6 +27,7 @@ pub fn configure(app: &mut App) {
     app.configure_sets(
         FixedUpdate,
         (
+            sets::DETTEROT_Input,
             sets::DETTEROT_Director,
             sets::DETTEROT_Missions,
             sets::DETTEROT_Spawns,

@@ -51,6 +51,7 @@ fn test_leg_context() -> LegContext {
         cadence_per_min: 90,
         mission_minutes: 12,
         player_rating: 40,
+        multiplayer: false,
     }
 }
 
