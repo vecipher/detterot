@@ -55,7 +55,7 @@ fn slowmo_adjusts_time_without_extra_meters() {
 
     {
         let time = app.world().resource::<Time<Virtual>>();
-        assert!((time.relative_speed() - 1.0).abs() < f32::EPSILON);
+        assert_eq!(time.relative_speed().to_bits(), 1.0_f32.to_bits());
     }
 
     app.world_mut()
@@ -69,7 +69,7 @@ fn slowmo_adjusts_time_without_extra_meters() {
 
     {
         let time = app.world().resource::<Time<Virtual>>();
-        assert!((time.relative_speed() - 0.8).abs() < f32::EPSILON);
+        assert_eq!(time.relative_speed().to_bits(), 0.8_f32.to_bits());
     }
 
     app.world_mut()
@@ -83,7 +83,7 @@ fn slowmo_adjusts_time_without_extra_meters() {
 
     {
         let time = app.world().resource::<Time<Virtual>>();
-        assert!((time.relative_speed() - 1.0).abs() < f32::EPSILON);
+        assert_eq!(time.relative_speed().to_bits(), 1.0_f32.to_bits());
     }
 
     let mut queue = app.world_mut().resource_mut::<CommandQueue>();

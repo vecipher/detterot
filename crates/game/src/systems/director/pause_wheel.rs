@@ -91,9 +91,9 @@ impl PauseState {
 }
 
 pub fn apply_slowmo_time(mut time: ResMut<Time<Virtual>>, wheel: Res<WheelState>) {
-    let target_speed = if wheel.slowmo_enabled { 0.8 } else { 1.0 };
+    let target_speed = if wheel.slowmo_enabled { 0.8_f32 } else { 1.0_f32 };
 
-    if (time.relative_speed() - target_speed).abs() > f32::EPSILON {
+    if time.relative_speed().to_bits() != target_speed.to_bits() {
         time.set_relative_speed(target_speed);
     }
 }
