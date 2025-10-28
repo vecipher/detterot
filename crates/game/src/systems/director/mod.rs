@@ -163,7 +163,7 @@ impl Plugin for DirectorPlugin {
     }
 }
 
-fn director_cfg_path() -> PathBuf {
+pub(crate) fn director_cfg_path() -> PathBuf {
     let default = Path::new("assets/director/m2.toml");
     if default.exists() {
         return default.to_path_buf();

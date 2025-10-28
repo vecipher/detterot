@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Context, Result};
 use bevy::app::App;
+use bevy::log::{tracing, LogPlugin};
 use bevy::prelude::*;
 use bevy::time::{Fixed, Time as BevyTime};
 use repro::{
@@ -16,8 +17,9 @@ use repro::{
 
 use crate::logs::m2;
 use cli::{CliOptions, Mode};
+use std::sync::Once;
 use systems::command_queue::CommandQueue;
-use systems::director::{DirectorPlugin, DirectorState, LegContext};
+use systems::director::{director_cfg_path, DirectorPlugin, DirectorState, LegContext};
 use systems::economy::{Pp, RouteId, Weather};
 
 pub fn run() -> Result<()> {
@@ -26,6 +28,8 @@ pub fn run() -> Result<()> {
 }
 
 pub fn run_with_options(options: CliOptions) -> Result<()> {
+    init_logging();
+    log_determinism_banner();
     m2::set_enabled(options.debug_logs || cfg!(feature = "m2_logs"));
     match options.mode() {
         Mode::Play => run_play(options),
@@ -273,6 +277,60 @@ fn leg_context_from_record(meta: &RecordMeta, options: &CliOptions) -> Result<Le
     Ok(context)
 }
 
+fn init_logging() {
+    static LOG_INIT: Once = Once::new();
+
+    if tracing::dispatcher::has_been_set() {
+        return;
+    }
+
+    LOG_INIT.call_once(|| {
+        let mut app = App::new();
+        LogPlugin::default().build(&mut app);
+    });
+}
+
+#[cfg(feature = "deterministic")]
+fn log_determinism_banner() {
+    let features = determinism_feature_flags();
+    match director_config_hash() {
+        Ok(hash) => info!(
+            "=== Deterministic build active: features=[{}] director_cfg_hash={} ===",
+            features, hash
+        ),
+        Err(err) => {
+            info!(
+                "=== Deterministic build active: features=[{}] director_cfg_hash=unavailable ===",
+                features
+            );
+            warn!("failed to hash director config: {err:?}");
+        }
+    }
+}
+
+#[cfg(not(feature = "deterministic"))]
+fn log_determinism_banner() {}
+
+#[cfg(feature = "deterministic")]
+fn determinism_feature_flags() -> String {
+    let mut features = vec!["deterministic"];
+    if cfg!(feature = "econ_logs") {
+        features.push("econ_logs");
+    }
+    if cfg!(feature = "m2_logs") {
+        features.push("m2_logs");
+    }
+    features.join(",")
+}
+
+#[cfg(feature = "deterministic")]
+fn director_config_hash() -> Result<String> {
+    let path = director_cfg_path();
+    let bytes =
+        fs::read(&path).with_context(|| format!("reading director config {}", path.display()))?;
+    Ok(blake3::hash(&bytes).to_hex().to_string())
+}
+
 fn parse_seed_string(value: &str) -> Result<u64> {
     let trimmed = value.trim();
     if let Some(hex) = trimmed
@@ -317,6 +375,55 @@ mod tests {
 
     fn default_context(options: &CliOptions) -> LegContext {
         leg_context_from_options(options)
+    }
+
+    #[cfg(feature = "deterministic")]
+    #[test]
+    fn deterministic_banner_is_logged() {
+        use bevy::log::tracing_subscriber;
+        use std::io::{Result as IoResult, Write};
+        use std::sync::{Arc, Mutex};
+        use tracing_subscriber::fmt::MakeWriter;
+
+        #[derive(Clone)]
+        struct BufferWriter(Arc<Mutex<Vec<u8>>>);
+
+        struct BufferHandle(Arc<Mutex<Vec<u8>>>);
+
+        impl<'a> MakeWriter<'a> for BufferWriter {
+            type Writer = BufferHandle;
+
+            fn make_writer(&'a self) -> Self::Writer {
+                BufferHandle(self.0.clone())
+            }
+        }
+
+        impl Write for BufferHandle {
+            fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
+                self.0.lock().unwrap().extend_from_slice(buf);
+                Ok(buf.len())
+            }
+
+            fn flush(&mut self) -> IoResult<()> {
+                Ok(())
+            }
+        }
+
+        let buffer = Arc::new(Mutex::new(Vec::new()));
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(BufferWriter(buffer.clone()))
+            .with_ansi(false)
+            .without_time()
+            .finish();
+
+        bevy::log::tracing::subscriber::with_default(subscriber, || {
+            log_determinism_banner();
+        });
+
+        let output = String::from_utf8(buffer.lock().unwrap().clone()).unwrap();
+        assert!(output.contains("Deterministic build active"));
+        assert!(output.contains("features=[deterministic"));
+        assert!(output.contains("director_cfg_hash="));
     }
 
     #[test]
