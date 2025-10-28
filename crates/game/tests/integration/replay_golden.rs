@@ -25,6 +25,7 @@ fn golden_records_replay_cleanly() {
         assert_eq!(hash, expected.trim(), "hash mismatch for {path}");
 
         let mut opts = CliOptions::for_mode(Mode::Replay);
+        opts.continue_after_mismatch = false;
         opts.io = Some(record_path.to_str().expect("record path").to_string());
         game::run_with_options(opts).expect("replay matches");
     }

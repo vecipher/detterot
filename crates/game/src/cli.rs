@@ -70,6 +70,7 @@ pub struct CliOptions {
         action = ArgAction::Set,
         num_args = 0..=1,
         default_missing_value = "true",
+        default_value_t = true,
         value_parser = BoolishValueParser::new()
     )]
     pub continue_after_mismatch: bool,
@@ -116,7 +117,7 @@ impl CliOptions {
             io: None,
             fixed_dt: None,
             headless: false,
-            continue_after_mismatch: false,
+            continue_after_mismatch: true,
             debug_logs: false,
             world_seed: DEFAULT_WORLD_SEED,
             link_id: DEFAULT_LINK_ID,
