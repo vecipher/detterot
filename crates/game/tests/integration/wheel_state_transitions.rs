@@ -88,7 +88,7 @@ fn queued_input_updates_states_and_emits_meters() {
 }
 
 #[test]
-fn multiplayer_input_ignores_hard_pause_requests() {
+fn multiplayer_input_ignores_hard_pause_and_slowmo_requests() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     scheduling::configure(&mut app);
@@ -104,7 +104,10 @@ fn multiplayer_input_ignores_hard_pause_requests() {
 
     {
         let mut queue = app.world_mut().resource_mut::<WheelInputQueue>();
-        queue.push(WheelInputAction::SetHardPause(true));
+        queue.extend([
+            WheelInputAction::SetSlowmo(true),
+            WheelInputAction::SetHardPause(true),
+        ]);
     }
 
     {
@@ -115,6 +118,12 @@ fn multiplayer_input_ignores_hard_pause_requests() {
     app.world_mut().run_schedule(FixedUpdate);
 
     let commands = app.world_mut().resource_mut::<CommandQueue>().drain();
+    assert!(
+        commands
+            .iter()
+            .all(|command| command != &Command::meter_at(0, "wheel_slowmo", 1)),
+        "no slowmo meters should be emitted in multiplayer",
+    );
     assert!(commands.is_empty());
 }
 
