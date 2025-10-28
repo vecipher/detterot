@@ -93,6 +93,7 @@ pub struct LegContext {
     pub player_rating: u8,
     pub multiplayer: bool,
     pub prior_danger_score: Option<i32>,
+    pub basis_overlay_bp_total: i32,
 }
 
 #[derive(Resource, Default, Clone, Copy)]
@@ -401,15 +402,18 @@ fn finalize_leg(
         queue.meter("econ_basis_pending", econ.pending_basis_overlay_bp as i32);
     }
     let danger_delta = state.current_danger_score - state.prior_danger_score;
+    let basis_delta = i32::from(econ.pending_basis_overlay_bp);
+    let basis_total = context.basis_overlay_bp_total.saturating_add(basis_delta);
     let _ = m2::log_post_leg_summary(
         danger_delta,
         econ.pending_pp_delta,
         econ.pending_basis_overlay_bp,
         state.current_danger_score,
-        econ.pending_basis_overlay_bp as i32,
+        basis_total,
     );
     state.prior_danger_score = state.current_danger_score;
     context.prior_danger_score = Some(state.current_danger_score);
+    context.basis_overlay_bp_total = basis_total;
     if state.leg_tick >= 600 {
         state.status = LegStatus::Completed(Outcome::Success);
     }
@@ -417,4 +421,78 @@ fn finalize_leg(
         state.leg_tick = state.leg_tick.saturating_add(1);
     }
     econ.clear();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::ecs::system::IntoSystem;
+
+    #[test]
+    fn finalize_leg_accumulates_basis_overlay_total() {
+        m2::set_enabled(false);
+
+        let mut world = World::new();
+        world.insert_resource(DirectorState {
+            status: LegStatus::Running,
+            current_danger_score: 120,
+            prior_danger_score: 100,
+            ..Default::default()
+        });
+        world.insert_resource(EconIntent {
+            pending_pp_delta: 0,
+            pending_basis_overlay_bp: 25,
+        });
+        let mut queue = CommandQueue::default();
+        queue.begin_tick(0);
+        world.insert_resource(queue);
+        world.insert_resource(LegContext {
+            basis_overlay_bp_total: 100,
+            ..Default::default()
+        });
+        world.insert_resource(PauseState::default());
+
+        let mut system = IntoSystem::into_system(finalize_leg);
+        system.initialize(&mut world);
+        let _ = system.run((), &mut world);
+        system.apply_deferred(&mut world);
+
+        {
+            let context = world.resource::<LegContext>();
+            assert_eq!(context.basis_overlay_bp_total, 125);
+        }
+        {
+            let econ = world.resource::<EconIntent>();
+            assert_eq!(econ.pending_basis_overlay_bp, 0);
+        }
+
+        {
+            let mut econ = world.resource_mut::<EconIntent>();
+            econ.pending_basis_overlay_bp = 10;
+        }
+        {
+            let mut queue = world.resource_mut::<CommandQueue>();
+            queue.begin_tick(1);
+        }
+        {
+            let mut state = world.resource_mut::<DirectorState>();
+            state.current_danger_score = 118;
+        }
+
+        let _ = system.run((), &mut world);
+        system.apply_deferred(&mut world);
+
+        let context = world.resource::<LegContext>();
+        assert_eq!(context.basis_overlay_bp_total, 135);
+        let queue = world.resource::<CommandQueue>();
+        assert_eq!(queue.buf.len(), 2);
+        assert!(queue
+            .buf
+            .iter()
+            .any(|command| matches!(command.kind, repro::CommandKind::Meter(ref meter) if meter.value == 25)));
+        assert!(queue
+            .buf
+            .iter()
+            .any(|command| matches!(command.kind, repro::CommandKind::Meter(ref meter) if meter.value == 10)));
+    }
 }

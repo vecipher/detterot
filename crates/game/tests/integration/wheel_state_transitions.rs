@@ -211,6 +211,7 @@ fn test_leg_context() -> LegContext {
         player_rating: 40,
         multiplayer: false,
         prior_danger_score: None,
+        basis_overlay_bp_total: 0,
     }
 }
 

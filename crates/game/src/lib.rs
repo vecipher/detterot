@@ -254,6 +254,7 @@ fn leg_context_from_options(options: &CliOptions) -> LegContext {
         player_rating: options.player_rating(),
         multiplayer: false,
         prior_danger_score: None,
+        basis_overlay_bp_total: 0,
     }
 }
 
