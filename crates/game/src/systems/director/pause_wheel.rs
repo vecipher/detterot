@@ -66,10 +66,9 @@ impl WheelState {
         }
     }
 
-    pub fn set_slowmo(&mut self, queue: &mut CommandQueue, enabled: bool) {
+    pub fn set_slowmo(&mut self, _queue: &mut CommandQueue, enabled: bool) {
         if self.slowmo_enabled != enabled {
             self.slowmo_enabled = enabled;
-            queue.meter("wheel_slowmo", enabled as i32);
         }
     }
 }
