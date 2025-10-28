@@ -2,6 +2,10 @@
 members = ["crates/repro", "crates/worldgen", "crates/game", "crates/econ_sim", "tools/repro_harness"]
 resolver = "2"
 
+[profile.deterministic]
+inherits = "release"
+debug = true
+
 [workspace.dependencies]
 avian3d = { version = "0.4", default-features = false, features = [
     "3d",
@@ -14,6 +18,7 @@ bevy = { version = "0.17.2", default-features = false, features = [
     "bevy_asset",
     "bevy_scene",
     "bevy_winit",
+    "bevy_log",
     "bevy_render",
     "bevy_core_pipeline",
     "bevy_pbr",

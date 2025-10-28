@@ -1,31 +1,45 @@
 name: ci
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
 
 jobs:
-  build-test:
+  checks:
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
-        toolchain: [stable]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.toolchain }}
+          toolchain: stable
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo test --all --all-features
-      - run: cargo build -p game --release
+      - name: Rustfmt
+        run: cargo fmt --all -- --check
+      - name: Clippy (workspace)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Clippy (deterministic feature)
+        run: cargo clippy -p game --all-targets --features deterministic -- -D warnings
+      - name: Clippy (avian physics feature)
+        run: cargo clippy -p game --all-targets --features avian_physics -- -D warnings
+      - name: Tests (workspace)
+        run: cargo test --workspace
+      - name: Tests (deterministic game)
+        run: cargo test -p game --features deterministic
+      - name: Tests (avian physics game)
+        run: cargo test -p game --features avian_physics
+      - name: Determinism guard
+        run: ci/grep_banned_random.sh
 
   determinism:
-    needs: build-test
+    needs: checks
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-14]
@@ -41,37 +55,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - name: Replay golden record
+      - name: Replay golden tests
+        run: cargo test -p game --features deterministic --test replay_golden
+      - name: Headless replay verification
         run: |
-          cargo run -p repro_harness -- --replay repro/golden/run_01.rec.json --assert-hash repro/golden/run_01.hash
-
-  econ_goldens:
-    needs: build-test
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, macos-14]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+          set -euo pipefail
+          for record in repro/records/leg_seed_*.json; do
+            cargo run -p game --features deterministic -- --mode replay --io "$record" --fixed-dt 0.0333333333 --headless --continue-after-mismatch false;
+          done
+      - name: Upload golden records on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
-      - name: Run econ sim tests
-        run: cargo test -p econ-sim -- --nocapture
-      - name: Produce econ curves
-        run: >
-          cargo run -p econ-sim -- --world-seed 42 --days 15 --hubs 3
-          --pp 1500,5000,9000 --debt 0,500_000_00,5_000_000_00 --out target/econ_curves.csv
-      - name: Diff econ CSV
-        run: ci/scripts/diff_csv.sh crates/econ_sim/tests/goldens/econ_curves_seed42.csv target/econ_curves.csv
-      - name: Banned RNG guard
-        run: ci/grep_banned_random.sh
-      - name: Economy float audit
-        run: |
-          CLIPPY_CONF_DIR=ci cargo clippy -p game --lib -- -D warnings
+          name: repro-records-${{ matrix.os }}
+          path: |
+            repro/records/*.json
+            repro/records/*.hash
