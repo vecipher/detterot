@@ -206,7 +206,12 @@ impl Plugin for DirectorPlugin {
         use scheduling::sets;
         app.add_systems(
             FixedUpdate,
-            (director_bootstrap, advance_leg_tick, drive_wheel_state, apply_slowmo)
+            (
+                director_bootstrap,
+                advance_leg_tick,
+                drive_wheel_state,
+                apply_slowmo,
+            )
                 .chain()
                 .in_set(sets::DETTEROT_Director),
         );
@@ -504,11 +509,7 @@ fn drive_wheel_state(
     }
 }
 
-fn apply_slowmo(
-    wheel: Res<WheelState>,
-    pause: Res<PauseState>,
-    mut time: ResMut<Time<Virtual>>,
-) {
+fn apply_slowmo(wheel: Res<WheelState>, pause: Res<PauseState>, mut time: ResMut<Time<Virtual>>) {
     let target_speed = if pause.hard_paused_sp {
         0.0
     } else if wheel.slowmo_enabled {
