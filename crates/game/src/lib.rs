@@ -19,9 +19,9 @@ use crate::logs::m2;
 use cli::{CliOptions, Mode};
 use std::sync::Once;
 use systems::command_queue::CommandQueue;
-use systems::director::{DirectorPlugin, DirectorState, LegContext};
 #[cfg(feature = "deterministic")]
 use systems::director::director_cfg_path;
+use systems::director::{DirectorPlugin, DirectorState, LegContext};
 use systems::economy::{Pp, RouteId, Weather};
 
 pub fn run() -> Result<()> {
