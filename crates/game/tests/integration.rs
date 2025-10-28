@@ -16,5 +16,7 @@ mod schedule_order;
 mod serde_roundtrip;
 #[path = "integration/spawn_monotone.rs"]
 mod spawn_monotone;
+#[path = "integration/spawn_type_determinism.rs"]
+mod spawn_type_determinism;
 #[path = "integration/wheel_state_transitions.rs"]
 mod wheel_state_transitions;
