@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::time::Virtual;
 
 use crate::systems::command_queue::CommandQueue;
 
@@ -86,5 +87,16 @@ impl PauseState {
             self.hard_paused_sp = paused;
             queue.meter("wheel_hard_pause", paused as i32);
         }
+    }
+}
+
+pub fn apply_slowmo_time(mut time: ResMut<Time<Virtual>>, wheel: Res<WheelState>) {
+    let target_speed = match wheel.slowmo_enabled {
+        true => 0.8_f32,
+        false => 1.0_f32,
+    };
+
+    if time.relative_speed().to_bits() != target_speed.to_bits() {
+        time.set_relative_speed(target_speed);
     }
 }

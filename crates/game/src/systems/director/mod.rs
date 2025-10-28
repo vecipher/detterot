@@ -14,7 +14,7 @@ pub mod spawn;
 
 use config::{load_director_cfg, DirectorCfg};
 use missions::{MissionBank, MissionResult};
-use pause_wheel::{PauseState, WheelState};
+use pause_wheel::{apply_slowmo_time, PauseState, WheelState};
 use spawn::{
     compute_spawn_budget, danger_diff_sign, danger_score, select_spawn_kind, spawn_position,
     wyhash64, DetRng, SpawnBudget,
@@ -152,6 +152,7 @@ impl Plugin for DirectorPlugin {
         app.insert_resource(PauseState::default());
         app.insert_resource(DirectorRuntime::default());
         app.add_systems(Startup, load_config_system);
+        app.add_systems(Update, apply_slowmo_time);
         app.add_systems(
             FixedUpdate,
             (
