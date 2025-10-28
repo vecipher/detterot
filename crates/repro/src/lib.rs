@@ -218,6 +218,13 @@ struct RecordMetaHashView<'a> {
     rulepack: &'a str,
     weather: &'a str,
     rng_salt: &'a str,
+    day: u32,
+    pp: u16,
+    density_per_10k: u32,
+    cadence_per_min: u32,
+    mission_minutes: u32,
+    player_rating: u8,
+    prior_danger_score: Option<i32>,
 }
 
 impl RecordMeta {
@@ -229,6 +236,13 @@ impl RecordMeta {
             rulepack: &self.rulepack,
             weather: &self.weather,
             rng_salt: &self.rng_salt,
+            day: self.day,
+            pp: self.pp,
+            density_per_10k: self.density_per_10k,
+            cadence_per_min: self.cadence_per_min,
+            mission_minutes: self.mission_minutes,
+            player_rating: self.player_rating,
+            prior_danger_score: self.prior_danger_score,
         }
     }
 }

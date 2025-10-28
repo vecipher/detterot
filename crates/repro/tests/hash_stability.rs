@@ -28,7 +28,7 @@ fn identical_records_hash_the_same() {
 }
 
 #[test]
-fn non_hash_meta_fields_do_not_change_digest() {
+fn hash_meta_fields_change_digest() {
     let mut base = Record {
         meta: RecordMeta {
             schema: 1,
@@ -57,7 +57,8 @@ fn non_hash_meta_fields_do_not_change_digest() {
     base.meta.cadence_per_min = 77;
     base.meta.mission_minutes = 3;
     base.meta.player_rating = 12;
+    base.meta.prior_danger_score = Some(7);
 
     let hash_modified = hash_record(&base).expect("hash");
-    assert_eq!(hash_base, hash_modified);
+    assert_ne!(hash_base, hash_modified);
 }
