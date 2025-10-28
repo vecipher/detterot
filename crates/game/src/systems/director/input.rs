@@ -43,10 +43,7 @@ pub fn apply_wheel_inputs(
     context: Option<Res<LegContext>>,
     keyboard: Option<Res<ButtonInput<KeyCode>>>,
 ) {
-    let allow_slowmo = context
-        .as_ref()
-        .map(|c| !c.multiplayer)
-        .unwrap_or(true);
+    let allow_slowmo = context.as_ref().map(|c| !c.multiplayer).unwrap_or(true);
     let allow_hard_pause = allow_slowmo;
 
     for action in input_queue.take() {
