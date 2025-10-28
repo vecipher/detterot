@@ -65,11 +65,7 @@ pub struct CliOptions {
     pub fixed_dt: Option<f64>,
     #[arg(long)]
     pub headless: bool,
-    #[arg(
-        long = "continue-after-mismatch",
-        default_value_t = true,
-        action = ArgAction::Set
-    )]
+    #[arg(long = "continue-after-mismatch", action = ArgAction::SetTrue)]
     pub continue_after_mismatch: bool,
     #[arg(long = "debug-logs")]
     pub debug_logs: bool,
@@ -114,7 +110,7 @@ impl CliOptions {
             io: None,
             fixed_dt: None,
             headless: false,
-            continue_after_mismatch: matches!(mode, Mode::Replay),
+            continue_after_mismatch: false,
             debug_logs: false,
             world_seed: DEFAULT_WORLD_SEED,
             link_id: DEFAULT_LINK_ID,
