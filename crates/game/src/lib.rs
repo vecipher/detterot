@@ -21,7 +21,7 @@ use std::sync::Once;
 use systems::command_queue::CommandQueue;
 #[cfg(feature = "deterministic")]
 use systems::director::director_cfg_path;
-use systems::director::{DirectorPlugin, DirectorState, LegContext};
+use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use systems::economy::{Pp, RouteId, Weather};
 
 pub fn run() -> Result<()> {
@@ -153,6 +153,22 @@ fn simulate_ticks(
     let mut app = build_app(options, context);
     app.finish();
     app.update();
+    app.world_mut()
+        .resource_scope(|world, mut queue: Mut<CommandQueue>| {
+            let allow_slowmo = world
+                .get_resource::<LegContext>()
+                .map(|ctx| !ctx.multiplayer)
+                .unwrap_or(true);
+            if allow_slowmo {
+                queue.begin_tick(0);
+                world
+                    .resource_mut::<WheelState>()
+                    .set_slowmo(&mut queue, true);
+                world
+                    .resource_mut::<WheelState>()
+                    .set_slowmo(&mut queue, false);
+            }
+        });
     let mut commands = Vec::new();
     for _ in 0..ticks {
         let current_tick = {
