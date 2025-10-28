@@ -7,7 +7,10 @@ pub mod spawn;
 pub mod config;
 pub mod rng;
 
-use avian3d::prelude::{PhysicsSchedulePlugin, SubstepCount};
+#[cfg(feature = "avian_physics")]
+use avian3d::prelude::PhysicsSchedulePlugin;
+#[cfg(feature = "avian_physics")]
+pub use avian3d::prelude::{Physics, SubstepCount};
 #[cfg(feature = "deterministic")]
 use bevy::ecs::schedule::ExecutorKind;
 use bevy::ecs::schedule::{Schedule, ScheduleLabel};
@@ -16,10 +19,39 @@ use bevy::time::Fixed;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+#[cfg(not(feature = "avian_physics"))]
+mod physics_stub {
+    use super::*;
+
+    #[derive(Default, Clone, Copy)]
+    pub struct Physics;
+
+    #[derive(Resource, Default, Clone, Copy)]
+    pub struct SubstepCount(pub u32);
+
+    pub(super) fn init(app: &mut App) {
+        app.init_resource::<Time<Physics>>();
+        app.insert_resource(SubstepCount::default());
+    }
+
+    pub(super) fn advance(world: &mut World, delta: Duration) {
+        world.resource_mut::<Time<Physics>>().advance_by(delta);
+    }
+}
+
+#[cfg(not(feature = "avian_physics"))]
+pub use physics_stub::{Physics, SubstepCount};
+
 use crate::logs::m2;
 use crate::scheduling::sets;
 use crate::systems::command_queue::CommandQueue;
 use crate::systems::economy::{Pp, RouteId, Weather};
+
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhysicsBackend {
+    Avian,
+    Grid,
+}
 
 pub use econ_intent::EconIntent;
 pub use input::{apply_wheel_inputs, WheelInputAction, WheelInputQueue};
@@ -132,7 +164,21 @@ impl Plugin for DirectorPlugin {
         let catalog = MissionCatalog(missions);
 
         app.add_schedule(Schedule::new(DirectorPhysicsSchedule));
-        app.add_plugins(PhysicsSchedulePlugin::new(DirectorPhysicsSchedule));
+        #[cfg(feature = "avian_physics")]
+        {
+            app.add_plugins(PhysicsSchedulePlugin::new(DirectorPhysicsSchedule));
+        }
+        #[cfg(not(feature = "avian_physics"))]
+        {
+            physics_stub::init(app);
+        }
+
+        let backend = if cfg!(feature = "avian_physics") {
+            PhysicsBackend::Avian
+        } else {
+            PhysicsBackend::Grid
+        };
+        app.insert_resource(backend);
 
         #[cfg(feature = "deterministic")]
         {
@@ -383,6 +429,9 @@ fn physics_step(world: &mut World) {
     }
 
     world.resource_mut::<Time>().advance_by(scaled_delta);
+
+    #[cfg(not(feature = "avian_physics"))]
+    physics_stub::advance(world, scaled_delta);
 
     world.run_schedule(DirectorPhysicsSchedule);
 }

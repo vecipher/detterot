@@ -1,4 +1,3 @@
-use avian3d::prelude::{Physics, SubstepCount};
 use bevy::prelude::*;
 use bevy::time::{Fixed, Time as BevyTime};
 
@@ -7,7 +6,8 @@ const FIXED_STEP_SECONDS: f64 = f64::from_bits(0x3F91_1111_1111_1111);
 use game::scheduling;
 use game::systems::command_queue::CommandQueue;
 use game::systems::director::{
-    DirectorPlugin, DirectorState, LegContext, LegStatus, Outcome, WheelState,
+    DirectorPlugin, DirectorState, LegContext, LegStatus, Outcome, Physics, PhysicsBackend,
+    SubstepCount, WheelState,
 };
 use game::systems::economy::{Pp, RouteId, Weather};
 use repro::Command;
@@ -47,6 +47,18 @@ fn build_director_app() -> App {
     app.finish();
     app.update();
     app
+}
+
+#[test]
+fn records_physics_backend() {
+    let app = build_director_app();
+    let backend = app.world().resource::<PhysicsBackend>();
+
+    #[cfg(feature = "avian_physics")]
+    assert_eq!(*backend, PhysicsBackend::Avian);
+
+    #[cfg(not(feature = "avian_physics"))]
+    assert_eq!(*backend, PhysicsBackend::Grid);
 }
 
 fn test_leg_context() -> LegContext {

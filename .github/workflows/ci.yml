@@ -27,10 +27,14 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Clippy (deterministic feature)
         run: cargo clippy -p game --all-targets --features deterministic -- -D warnings
+      - name: Clippy (avian physics feature)
+        run: cargo clippy -p game --all-targets --features avian_physics -- -D warnings
       - name: Tests (workspace)
         run: cargo test --workspace
       - name: Tests (deterministic game)
         run: cargo test -p game --features deterministic
+      - name: Tests (avian physics game)
+        run: cargo test -p game --features avian_physics
       - name: Determinism guard
         run: ci/grep_banned_random.sh
 
