@@ -510,7 +510,7 @@ fn drive_wheel_state(
 }
 
 fn apply_slowmo(wheel: Res<WheelState>, pause: Res<PauseState>, mut time: ResMut<Time<Virtual>>) {
-    let target_speed = if pause.hard_paused_sp {
+    let target_speed: f32 = if pause.hard_paused_sp {
         0.0
     } else if wheel.slowmo_enabled {
         0.8
@@ -520,7 +520,9 @@ fn apply_slowmo(wheel: Res<WheelState>, pause: Res<PauseState>, mut time: ResMut
 
     let current_speed = time.relative_speed();
 
-    if (current_speed - target_speed).abs() > f32::EPSILON {
+    // Compare the raw bit patterns to avoid triggering the float arithmetic lint while
+    // still ensuring we only write when the speed actually changes.
+    if current_speed.to_bits() != target_speed.to_bits() {
         time.set_relative_speed(target_speed);
     }
 }
