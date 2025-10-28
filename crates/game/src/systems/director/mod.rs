@@ -182,6 +182,7 @@ enum WheelAction {
     ToggleStance,
     ToggleOverwatch,
     ToggleMoveMode,
+    #[allow(dead_code)]
     ToggleSlowmo,
     Pause(bool),
 }
@@ -209,9 +210,15 @@ impl Plugin for DirectorPlugin {
             (
                 director_bootstrap,
                 advance_leg_tick,
-                drive_wheel_state,
+                drive_wheel_state_fixed,
                 apply_slowmo,
             )
+                .chain()
+                .in_set(sets::DETTEROT_Director),
+        );
+        app.add_systems(
+            Update,
+            (drive_wheel_state_when_paused, apply_slowmo)
                 .chain()
                 .in_set(sets::DETTEROT_Director),
         );
@@ -409,12 +416,47 @@ fn emit_spawn_commands(
     runtime.spawn_emitted = true;
 }
 
-fn drive_wheel_state(
+fn drive_wheel_state_fixed(
     mut script: ResMut<WheelScript>,
     mut wheel: ResMut<WheelState>,
     mut pause: ResMut<PauseState>,
     mut queue: ResMut<CommandQueue>,
     mut state: ResMut<DirectorState>,
+) {
+    drive_wheel_state_inner(
+        &mut script,
+        &mut wheel,
+        &mut pause,
+        &mut queue,
+        &mut state,
+    );
+}
+
+fn drive_wheel_state_when_paused(
+    mut script: ResMut<WheelScript>,
+    mut wheel: ResMut<WheelState>,
+    mut pause: ResMut<PauseState>,
+    mut queue: ResMut<CommandQueue>,
+    mut state: ResMut<DirectorState>,
+) {
+    if !pause.hard_paused_sp {
+        return;
+    }
+    drive_wheel_state_inner(
+        &mut script,
+        &mut wheel,
+        &mut pause,
+        &mut queue,
+        &mut state,
+    );
+}
+
+fn drive_wheel_state_inner(
+    script: &mut WheelScript,
+    wheel: &mut WheelState,
+    pause: &mut PauseState,
+    queue: &mut CommandQueue,
+    state: &mut DirectorState,
 ) {
     if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
         return;
@@ -442,10 +484,6 @@ fn drive_wheel_state(
                 action: WheelAction::ToggleMoveMode,
             },
             WheelEvent {
-                tick: 80,
-                action: WheelAction::ToggleSlowmo,
-            },
-            WheelEvent {
                 tick: 100,
                 action: WheelAction::Pause(true),
             },
@@ -469,32 +507,32 @@ fn drive_wheel_state(
         }
         let event = script.events.pop_front().unwrap();
         match event.action {
-            WheelAction::EmitBaseline => wheel.emit_meters(&mut queue),
+            WheelAction::EmitBaseline => wheel.emit_meters(queue),
             WheelAction::ToggleTool => {
                 wheel.tool = match wheel.tool {
                     pause_wheel::ToolSlot::A => pause_wheel::ToolSlot::B,
                     pause_wheel::ToolSlot::B => pause_wheel::ToolSlot::A,
                 };
-                wheel.emit_meters(&mut queue);
+                wheel.emit_meters(queue);
             }
             WheelAction::ToggleStance => {
                 wheel.stance = match wheel.stance {
                     pause_wheel::Stance::Brace => pause_wheel::Stance::Vault,
                     pause_wheel::Stance::Vault => pause_wheel::Stance::Brace,
                 };
-                wheel.emit_meters(&mut queue);
+                wheel.emit_meters(queue);
             }
             WheelAction::ToggleOverwatch => {
                 wheel.overwatch = !wheel.overwatch;
-                wheel.emit_meters(&mut queue);
+                wheel.emit_meters(queue);
             }
             WheelAction::ToggleMoveMode => {
                 wheel.move_mode = !wheel.move_mode;
-                wheel.emit_meters(&mut queue);
+                wheel.emit_meters(queue);
             }
             WheelAction::ToggleSlowmo => {
                 wheel.slowmo_enabled = !wheel.slowmo_enabled;
-                wheel.emit_meters(&mut queue);
+                wheel.emit_meters(queue);
             }
             WheelAction::Pause(value) => {
                 pause.hard_paused_sp = value;
@@ -853,53 +891,63 @@ mod tests {
         app.add_plugins(MinimalPlugins);
         app.add_plugins(DirectorPlugin);
 
-        let mut slowmo_triggered = false;
-
-        for _ in 0..200 {
-            app.update();
-
-            let slowmo_enabled = {
-                let wheel = app.world().resource::<WheelState>();
-                wheel.slowmo_enabled
-            };
-
-            let current_speed = {
-                let time = app.world().resource::<Time<Virtual>>();
-                time.relative_speed()
-            };
-
-            if slowmo_enabled {
-                slowmo_triggered = true;
-                assert!((current_speed - 0.8).abs() < f32::EPSILON);
-
-                let fixed_timestep = {
-                    let fixed_time = app.world().resource::<Time<Fixed>>();
-                    fixed_time.timestep()
-                };
-
-                let initial_tick = {
-                    let state = app.world().resource::<DirectorState>();
-                    state.leg_tick
-                };
-
-                for _ in 0..10 {
-                    app.update();
-
-                    let time = app.world().resource::<Time<Virtual>>();
-                    assert!((time.relative_speed() - 0.8).abs() < f32::EPSILON);
-                }
-
-                let state = app.world().resource::<DirectorState>();
-                assert!(state.leg_tick > initial_tick);
-
-                let fixed_time = app.world().resource::<Time<Fixed>>();
-                assert_eq!(fixed_time.timestep(), fixed_timestep);
-                break;
-            } else {
-                assert!((current_speed - 1.0).abs() < f32::EPSILON);
-            }
+        // Establish baseline speed and cadence.
+        app.update();
+        {
+            let time = app.world().resource::<Time<Virtual>>();
+            assert!((time.relative_speed() - 1.0).abs() < f32::EPSILON);
         }
 
-        assert!(slowmo_triggered, "slowmo toggle event triggered");
+        let fixed_timestep = {
+            let fixed_time = app.world().resource::<Time<Fixed>>();
+            fixed_time.timestep()
+        };
+
+        let initial_tick = {
+            let state = app.world().resource::<DirectorState>();
+            state.leg_tick
+        };
+
+        // Toggle slow-mo manually and ensure it applies a slower virtual speed
+        // without affecting the fixed timestep.
+        app.world_mut()
+            .resource_mut::<WheelState>()
+            .slowmo_enabled = true;
+        app.update();
+
+        {
+            let time = app.world().resource::<Time<Virtual>>();
+            assert!((time.relative_speed() - 0.8).abs() < f32::EPSILON);
+        }
+
+        for _ in 0..10 {
+            app.update();
+            let time = app.world().resource::<Time<Virtual>>();
+            assert!((time.relative_speed() - 0.8).abs() < f32::EPSILON);
+        }
+
+        {
+            let state = app.world().resource::<DirectorState>();
+            assert!(state.leg_tick > initial_tick);
+        }
+
+        {
+            let fixed_time = app.world().resource::<Time<Fixed>>();
+            assert_eq!(fixed_time.timestep(), fixed_timestep);
+        }
+
+        // Toggle slow-mo back off and confirm the virtual clock returns to normal speed.
+        app.world_mut()
+            .resource_mut::<WheelState>()
+            .slowmo_enabled = false;
+
+        for _ in 0..2 {
+            app.update();
+        }
+
+        {
+            let time = app.world().resource::<Time<Virtual>>();
+            assert!((time.relative_speed() - 1.0).abs() < f32::EPSILON);
+        }
     }
 }
