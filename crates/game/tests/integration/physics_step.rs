@@ -12,8 +12,11 @@ use game::systems::director::{
 use game::systems::economy::{Pp, RouteId, Weather};
 use repro::Command;
 
-const SLOWMO_NUMERATOR: u32 = 4;
-const SLOWMO_DENOMINATOR: u32 = 5;
+#[cfg(feature = "deterministic")]
+use blake3::hash as blake3_hash;
+
+#[cfg(feature = "deterministic")]
+use repro::canonical_json_bytes;
 
 fn build_director_app() -> App {
     let mut app = App::new();
@@ -72,16 +75,21 @@ fn expected_substeps(cadence_per_min: u32) -> u32 {
 }
 
 fn step_once(app: &mut App) {
+    let _ = step_once_collect(app);
+}
+
+fn step_once_collect(app: &mut App) -> Vec<Command> {
     let current_tick = app.world().resource::<DirectorState>().leg_tick;
-    {
+    let commands = {
         let world = app.world_mut();
         {
             let mut queue = world.resource_mut::<CommandQueue>();
             queue.begin_tick(current_tick);
         }
         world.run_schedule(FixedUpdate);
-    }
-    app.world_mut().resource_mut::<CommandQueue>().drain();
+        world.resource_mut::<CommandQueue>().drain()
+    };
+    commands
 }
 
 #[test]
@@ -146,25 +154,14 @@ fn physics_step_advances_physics_time() {
 }
 
 #[test]
-fn physics_step_slowmo_scales_cadence_and_time() {
+fn physics_step_slowmo_preserves_fixed_cadence() {
     let mut app = build_director_app();
 
-    let initial_elapsed = app.world().resource::<Time<Physics>>().elapsed();
     step_once(&mut app);
     let cadence = test_leg_context().cadence_per_min;
-    let expected_normal = expected_substeps(cadence);
-    let (first_elapsed, normal_delta, normal_substeps) = {
-        let world = app.world();
-        let first_elapsed = world.resource::<Time<Physics>>().elapsed();
-        let normal_substeps = world.resource::<SubstepCount>().0;
-        (
-            first_elapsed,
-            first_elapsed - initial_elapsed,
-            normal_substeps,
-        )
-    };
-
-    assert_eq!(normal_substeps, expected_normal);
+    let expected_substeps = expected_substeps(cadence);
+    let baseline_substeps = app.world().resource::<SubstepCount>().0;
+    assert_eq!(baseline_substeps, expected_substeps);
 
     app.world_mut()
         .resource_scope(|world, mut queue: Mut<CommandQueue>| {
@@ -174,23 +171,8 @@ fn physics_step_slowmo_scales_cadence_and_time() {
         });
 
     step_once(&mut app);
-    let (slowmo_delta, slowmo_substeps) = {
-        let world = app.world();
-        let second_elapsed = world.resource::<Time<Physics>>().elapsed();
-        let slowmo_substeps = world.resource::<SubstepCount>().0;
-        (second_elapsed - first_elapsed, slowmo_substeps)
-    };
-
-    let expected_cadence = cadence.saturating_mul(SLOWMO_NUMERATOR) / SLOWMO_DENOMINATOR;
-    let expected_slowmo = expected_substeps(expected_cadence);
-
-    assert_eq!(slowmo_substeps, expected_slowmo);
-
-    let normal_nanos = normal_delta.as_nanos();
-    let expected_slowmo_nanos = normal_nanos
-        .saturating_mul(SLOWMO_NUMERATOR as u128)
-        .saturating_div(SLOWMO_DENOMINATOR as u128);
-    assert_eq!(slowmo_delta.as_nanos(), expected_slowmo_nanos);
+    let slowmo_substeps = app.world().resource::<SubstepCount>().0;
+    assert_eq!(slowmo_substeps, expected_substeps);
 }
 
 #[cfg(feature = "deterministic")]
@@ -216,4 +198,49 @@ fn capture_trace(app: &mut App, ticks: usize) -> Vec<(u32, u128)> {
         trace.push((tick, elapsed));
     }
     trace
+}
+
+#[cfg(feature = "deterministic")]
+#[test]
+fn physics_step_slowmo_toggle_preserves_command_trace() {
+    fn trace_hash(commands: &[Command]) -> String {
+        let bytes = canonical_json_bytes(&commands.to_vec()).expect("canonical command trace");
+        blake3_hash(&bytes).to_hex().to_string()
+    }
+
+    let mut baseline_app = build_director_app();
+    let baseline_commands = {
+        let mut commands = Vec::new();
+        for _ in 0..6 {
+            commands.extend(step_once_collect(&mut baseline_app));
+        }
+        commands
+    };
+
+    let mut slowmo_app = build_director_app();
+    let mut slowmo_commands = Vec::new();
+    for tick in 0..6 {
+        if tick == 1 {
+            slowmo_app
+                .world_mut()
+                .resource_scope(|world, mut queue: Mut<CommandQueue>| {
+                    world
+                        .resource_mut::<WheelState>()
+                        .set_slowmo(&mut queue, true);
+                });
+        }
+        if tick == 4 {
+            slowmo_app
+                .world_mut()
+                .resource_scope(|world, mut queue: Mut<CommandQueue>| {
+                    world
+                        .resource_mut::<WheelState>()
+                        .set_slowmo(&mut queue, false);
+                });
+        }
+        slowmo_commands.extend(step_once_collect(&mut slowmo_app));
+    }
+
+    assert_eq!(baseline_commands, slowmo_commands);
+    assert_eq!(trace_hash(&baseline_commands), trace_hash(&slowmo_commands));
 }

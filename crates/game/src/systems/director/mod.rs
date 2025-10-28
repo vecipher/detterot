@@ -106,6 +106,11 @@ pub struct SpawnMemory {
     pub last_spawned_enemies: u32,
 }
 
+#[derive(Resource, Default, Clone, Copy)]
+struct PhysicsCadence {
+    base_timestep: Option<Duration>,
+}
+
 #[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
 struct DirectorPhysicsSchedule;
 
@@ -147,6 +152,7 @@ impl Plugin for DirectorPlugin {
             .init_resource::<WheelInputQueue>()
             .init_resource::<SpawnMemory>()
             .init_resource::<LegContext>()
+            .init_resource::<PhysicsCadence>()
             .add_systems(Startup, setup_director)
             .add_systems(
                 FixedUpdate,
@@ -337,31 +343,12 @@ fn physics_step(world: &mut World) {
     let context = *world.resource::<LegContext>();
     let wheel = *world.resource::<WheelState>();
     let base_cadence = context.cadence_per_min;
-    let effective_cadence = if wheel.slowmo_enabled {
-        base_cadence.saturating_mul(SLOWMO_NUMERATOR) / SLOWMO_DENOMINATOR
-    } else {
-        base_cadence
-    };
-
-    let base_delta = world.resource::<Time<Fixed>>().timestep();
-    let effective_delta = if wheel.slowmo_enabled {
-        scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
-    } else {
-        base_delta
-    };
-
-    if wheel.slowmo_enabled {
-        if let Some(mut queue) = world.get_resource_mut::<CommandQueue>() {
-            let nanos = effective_delta.as_nanos().min(i32::MAX as u128) as i32;
-            queue.meter("physics_fixed_dt_ns", nanos);
-        }
-    }
 
     if let Some(mut substeps) = world.get_resource_mut::<SubstepCount>() {
-        let desired = if effective_cadence == 0 {
+        let desired = if base_cadence == 0 {
             1
         } else {
-            ((effective_cadence - 1) / 60).saturating_add(1)
+            ((base_cadence - 1) / 60).saturating_add(1)
         };
         let target = desired.clamp(1, 12);
         if substeps.0 != target {
@@ -369,19 +356,35 @@ fn physics_step(world: &mut World) {
         }
     }
 
-    if wheel.slowmo_enabled {
-        world
-            .resource_mut::<Time<Fixed>>()
-            .set_timestep(effective_delta);
+    let current_fixed = world.resource::<Time<Fixed>>().timestep();
+    let base_delta = {
+        let mut cadence = world.resource_mut::<PhysicsCadence>();
+        let entry = cadence.base_timestep.get_or_insert_with(|| {
+            if wheel.slowmo_enabled {
+                scale_duration(current_fixed, SLOWMO_DENOMINATOR, SLOWMO_NUMERATOR)
+            } else {
+                current_fixed
+            }
+        });
+        *entry
+    };
+
+    let scaled_delta = if wheel.slowmo_enabled {
+        scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
+    } else {
+        base_delta
+    };
+
+    {
+        let mut fixed = world.resource_mut::<Time<Fixed>>();
+        if fixed.timestep() != scaled_delta {
+            fixed.set_timestep(scaled_delta);
+        }
     }
 
-    world.resource_mut::<Time>().advance_by(effective_delta);
+    world.resource_mut::<Time>().advance_by(scaled_delta);
 
     world.run_schedule(DirectorPhysicsSchedule);
-
-    if wheel.slowmo_enabled {
-        world.resource_mut::<Time<Fixed>>().set_timestep(base_delta);
-    }
 }
 
 fn finalize_leg(

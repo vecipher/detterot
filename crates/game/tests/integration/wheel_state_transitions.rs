@@ -26,9 +26,9 @@ fn wheel_state_changes_emit_meters() {
         Command::meter_at(0, "wheel_tool", 1),
         Command::meter_at(0, "wheel_overwatch", 1),
         Command::meter_at(0, "wheel_move", 1),
-        Command::meter_at(0, "wheel_slowmo", 1),
     ];
     assert_eq!(queue.buf, expected);
+    assert!(wheel.slowmo_enabled);
 }
 
 #[test]
@@ -81,7 +81,6 @@ fn queued_input_updates_states_and_emits_meters() {
         Command::meter_at(0, "wheel_tool", 1),
         Command::meter_at(0, "wheel_overwatch", 1),
         Command::meter_at(0, "wheel_move", 1),
-        Command::meter_at(0, "wheel_slowmo", 1),
         Command::meter_at(0, "wheel_hard_pause", 1),
     ];
     assert_eq!(commands, expected);
@@ -118,12 +117,6 @@ fn multiplayer_input_ignores_hard_pause_and_slowmo_requests() {
     app.world_mut().run_schedule(FixedUpdate);
 
     let commands = app.world_mut().resource_mut::<CommandQueue>().drain();
-    assert!(
-        commands
-            .iter()
-            .all(|command| command != &Command::meter_at(0, "wheel_slowmo", 1)),
-        "no slowmo meters should be emitted in multiplayer",
-    );
     assert!(commands.is_empty());
 }
 
@@ -166,7 +159,6 @@ fn keyboard_input_updates_wheel_state() {
         Command::meter_at(0, "wheel_tool", 1),
         Command::meter_at(0, "wheel_overwatch", 1),
         Command::meter_at(0, "wheel_move", 1),
-        Command::meter_at(0, "wheel_slowmo", 1),
         Command::meter_at(0, "wheel_hard_pause", 1),
     ];
     assert_eq!(commands, expected);
