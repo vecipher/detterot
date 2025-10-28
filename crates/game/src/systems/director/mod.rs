@@ -423,13 +423,7 @@ fn drive_wheel_state_fixed(
     mut queue: ResMut<CommandQueue>,
     mut state: ResMut<DirectorState>,
 ) {
-    drive_wheel_state_inner(
-        &mut script,
-        &mut wheel,
-        &mut pause,
-        &mut queue,
-        &mut state,
-    );
+    drive_wheel_state_inner(&mut script, &mut wheel, &mut pause, &mut queue, &mut state);
 }
 
 fn drive_wheel_state_when_paused(
@@ -442,13 +436,7 @@ fn drive_wheel_state_when_paused(
     if !pause.hard_paused_sp {
         return;
     }
-    drive_wheel_state_inner(
-        &mut script,
-        &mut wheel,
-        &mut pause,
-        &mut queue,
-        &mut state,
-    );
+    drive_wheel_state_inner(&mut script, &mut wheel, &mut pause, &mut queue, &mut state);
 }
 
 fn drive_wheel_state_inner(
@@ -910,9 +898,7 @@ mod tests {
 
         // Toggle slow-mo manually and ensure it applies a slower virtual speed
         // without affecting the fixed timestep.
-        app.world_mut()
-            .resource_mut::<WheelState>()
-            .slowmo_enabled = true;
+        app.world_mut().resource_mut::<WheelState>().slowmo_enabled = true;
         app.update();
 
         {
@@ -937,9 +923,7 @@ mod tests {
         }
 
         // Toggle slow-mo back off and confirm the virtual clock returns to normal speed.
-        app.world_mut()
-            .resource_mut::<WheelState>()
-            .slowmo_enabled = false;
+        app.world_mut().resource_mut::<WheelState>().slowmo_enabled = false;
 
         for _ in 0..2 {
             app.update();
