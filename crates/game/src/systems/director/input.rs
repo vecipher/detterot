@@ -43,7 +43,8 @@ pub fn apply_wheel_inputs(
     context: Option<Res<LegContext>>,
     keyboard: Option<Res<ButtonInput<KeyCode>>>,
 ) {
-    let allow_hard_pause = context.map(|c| !c.multiplayer).unwrap_or(true);
+    let allow_slowmo = context.as_ref().map(|c| !c.multiplayer).unwrap_or(true);
+    let allow_hard_pause = allow_slowmo;
 
     for action in input_queue.take() {
         match action {
@@ -60,7 +61,9 @@ pub fn apply_wheel_inputs(
                 wheel.set_move_mode(&mut command_queue, enabled);
             }
             WheelInputAction::SetSlowmo(enabled) => {
-                wheel.set_slowmo(&mut command_queue, enabled);
+                if allow_slowmo {
+                    wheel.set_slowmo(&mut command_queue, enabled);
+                }
             }
             WheelInputAction::SetHardPause(enabled) => {
                 if allow_hard_pause {
@@ -105,10 +108,12 @@ pub fn apply_wheel_inputs(
             wheel.set_move_mode(&mut command_queue, false);
         }
 
-        if keys.pressed(KeyCode::KeyL) {
-            wheel.set_slowmo(&mut command_queue, true);
-        } else if keys.just_released(KeyCode::KeyL) {
-            wheel.set_slowmo(&mut command_queue, false);
+        if allow_slowmo {
+            if keys.pressed(KeyCode::KeyL) {
+                wheel.set_slowmo(&mut command_queue, true);
+            } else if keys.just_released(KeyCode::KeyL) {
+                wheel.set_slowmo(&mut command_queue, false);
+            }
         }
 
         if allow_hard_pause {
