@@ -141,6 +141,7 @@ pub struct SpawnMemory {
 #[derive(Resource, Default, Clone, Copy)]
 struct PhysicsCadence {
     base_timestep: Option<Duration>,
+    accumulator: Duration,
 }
 
 #[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
@@ -370,9 +371,13 @@ fn scale_duration(duration: Duration, numerator: u32, denominator: u32) -> Durat
         .saturating_mul(numerator as u128)
         .saturating_div(denominator as u128);
 
+    duration_from_nanos(scaled)
+}
+
+fn duration_from_nanos(nanos: u128) -> Duration {
     Duration::new(
-        (scaled / 1_000_000_000) as u64,
-        (scaled % 1_000_000_000) as u32,
+        (nanos / 1_000_000_000) as u64,
+        (nanos % 1_000_000_000) as u32,
     )
 }
 
@@ -403,37 +408,46 @@ fn physics_step(world: &mut World) {
     }
 
     let current_fixed = world.resource::<Time<Fixed>>().timestep();
-    let base_delta = {
+    let (base_delta, scaled_delta, steps_to_run) = {
         let mut cadence = world.resource_mut::<PhysicsCadence>();
-        let entry = cadence.base_timestep.get_or_insert_with(|| {
-            if wheel.slowmo_enabled {
-                scale_duration(current_fixed, SLOWMO_DENOMINATOR, SLOWMO_NUMERATOR)
-            } else {
+        let base_delta = match cadence.base_timestep {
+            Some(base) if base == current_fixed => base,
+            _ => {
+                cadence.base_timestep = Some(current_fixed);
+                cadence.accumulator = Duration::default();
                 current_fixed
             }
-        });
-        *entry
-    };
+        };
+        let scaled_delta = if wheel.slowmo_enabled {
+            scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
+        } else {
+            base_delta
+        };
 
-    let scaled_delta = if wheel.slowmo_enabled {
-        scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
-    } else {
-        base_delta
-    };
-
-    {
-        let mut fixed = world.resource_mut::<Time<Fixed>>();
-        if fixed.timestep() != scaled_delta {
-            fixed.set_timestep(scaled_delta);
+        if base_delta.is_zero() {
+            cadence.accumulator = Duration::default();
+            (base_delta, scaled_delta, 0_usize)
+        } else {
+            let total = cadence
+                .accumulator
+                .as_nanos()
+                .saturating_add(scaled_delta.as_nanos());
+            let base_nanos = base_delta.as_nanos();
+            let steps = (total / base_nanos) as usize;
+            let remainder = total % base_nanos;
+            cadence.accumulator = duration_from_nanos(remainder);
+            (base_delta, scaled_delta, steps)
         }
-    }
+    };
 
     world.resource_mut::<Time>().advance_by(scaled_delta);
 
-    #[cfg(not(feature = "avian_physics"))]
-    physics_stub::advance(world, scaled_delta);
+    for _ in 0..steps_to_run {
+        #[cfg(not(feature = "avian_physics"))]
+        physics_stub::advance(world, base_delta);
 
-    world.run_schedule(DirectorPhysicsSchedule);
+        world.run_schedule(DirectorPhysicsSchedule);
+    }
 }
 
 fn finalize_leg(
