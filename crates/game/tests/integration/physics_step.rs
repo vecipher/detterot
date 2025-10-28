@@ -13,6 +13,9 @@ use game::systems::economy::{Pp, RouteId, Weather};
 use repro::Command;
 
 #[cfg(feature = "deterministic")]
+use repro::CommandKind;
+
+#[cfg(feature = "deterministic")]
 use blake3::hash as blake3_hash;
 
 #[cfg(feature = "deterministic")]
@@ -253,6 +256,29 @@ fn physics_step_slowmo_toggle_preserves_command_trace() {
         slowmo_commands.extend(step_once_collect(&mut slowmo_app));
     }
 
-    assert_eq!(baseline_commands, slowmo_commands);
-    assert_eq!(trace_hash(&baseline_commands), trace_hash(&slowmo_commands));
+    let filtered_baseline: Vec<_> = baseline_commands
+        .iter()
+        .filter(
+            |cmd| !matches!(cmd.kind, CommandKind::Meter(ref meter) if meter.key == "wheel_slowmo"),
+        )
+        .cloned()
+        .collect();
+    let filtered_slowmo: Vec<_> = slowmo_commands
+        .iter()
+        .filter(
+            |cmd| !matches!(cmd.kind, CommandKind::Meter(ref meter) if meter.key == "wheel_slowmo"),
+        )
+        .cloned()
+        .collect();
+    let slowmo_meters: Vec<_> = slowmo_commands
+        .iter()
+        .filter_map(|cmd| match &cmd.kind {
+            CommandKind::Meter(meter) if meter.key == "wheel_slowmo" => Some((cmd.t, meter.value)),
+            _ => None,
+        })
+        .collect();
+
+    assert_eq!(filtered_baseline, filtered_slowmo);
+    assert_eq!(slowmo_meters, vec![(0, 1), (3, 0)]);
+    assert_eq!(trace_hash(&filtered_baseline), trace_hash(&filtered_slowmo));
 }
