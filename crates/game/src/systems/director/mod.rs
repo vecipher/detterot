@@ -414,11 +414,48 @@ fn finalize_leg(
     state.prior_danger_score = state.current_danger_score;
     context.prior_danger_score = Some(state.current_danger_score);
     context.basis_overlay_bp_total = basis_total;
-    if state.leg_tick >= 600 {
+    const LEG_DURATION_TOLERANCE_TICKS: u32 = 60;
+    let mission_minutes = context.mission_minutes;
+    let target_tick = mission_minutes.saturating_mul(60);
+    let clamp_tick = |queue: &mut CommandQueue,
+                      mission_minutes: u32,
+                      tolerance: u32,
+                      target_tick: u32,
+                      attempted_tick: u32|
+     -> u32 {
+        let max_tick = target_tick.saturating_add(tolerance);
+        if attempted_tick > max_tick {
+            let overflow = attempted_tick - max_tick;
+            queue.meter("leg_tick_over_window", overflow as i32);
+            let _ =
+                m2::log_leg_duration_clamped(mission_minutes, tolerance, attempted_tick, max_tick);
+            max_tick
+        } else {
+            attempted_tick
+        }
+    };
+
+    state.leg_tick = clamp_tick(
+        &mut *queue,
+        mission_minutes,
+        LEG_DURATION_TOLERANCE_TICKS,
+        target_tick,
+        state.leg_tick,
+    );
+
+    if state.leg_tick >= target_tick {
         state.status = LegStatus::Completed(Outcome::Success);
     }
-    if !pause.hard_paused_sp {
-        state.leg_tick = state.leg_tick.saturating_add(1);
+
+    if !pause.hard_paused_sp && matches!(state.status, LegStatus::Running) {
+        let next_tick = state.leg_tick.saturating_add(1);
+        state.leg_tick = clamp_tick(
+            &mut *queue,
+            mission_minutes,
+            LEG_DURATION_TOLERANCE_TICKS,
+            target_tick,
+            next_tick,
+        );
     }
     econ.clear();
 }

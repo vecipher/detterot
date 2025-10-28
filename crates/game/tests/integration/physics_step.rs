@@ -6,8 +6,11 @@ const FIXED_STEP_SECONDS: f64 = f64::from_bits(0x3F91_1111_1111_1111);
 
 use game::scheduling;
 use game::systems::command_queue::CommandQueue;
-use game::systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
+use game::systems::director::{
+    DirectorPlugin, DirectorState, LegContext, LegStatus, Outcome, WheelState,
+};
 use game::systems::economy::{Pp, RouteId, Weather};
+use repro::Command;
 
 const SLOWMO_NUMERATOR: u32 = 4;
 const SLOWMO_DENOMINATOR: u32 = 5;
@@ -79,6 +82,51 @@ fn step_once(app: &mut App) {
         world.run_schedule(FixedUpdate);
     }
     app.world_mut().resource_mut::<CommandQueue>().drain();
+}
+
+#[test]
+fn finalize_leg_clamps_to_mission_window() {
+    let mut app = build_director_app();
+
+    for _ in 0..200 {
+        step_once(&mut app);
+    }
+
+    {
+        let mut context = app.world_mut().resource_mut::<LegContext>();
+        context.mission_minutes = 1;
+    }
+
+    let (current_tick, commands) = {
+        let world = app.world_mut();
+        let current_tick = world.resource::<DirectorState>().leg_tick;
+        {
+            let mut queue = world.resource_mut::<CommandQueue>();
+            queue.begin_tick(current_tick);
+        }
+        world.run_schedule(FixedUpdate);
+        let commands = world.resource_mut::<CommandQueue>().drain();
+        (current_tick, commands)
+    };
+
+    let target_tick = 1_u32.saturating_mul(60);
+    let tolerance = 60;
+    let expected_max = target_tick + tolerance;
+    let overflow = current_tick.saturating_sub(expected_max) as i32;
+
+    let state = app.world().resource::<DirectorState>();
+    assert_eq!(state.leg_tick, expected_max);
+    assert!(matches!(
+        state.status,
+        LegStatus::Completed(Outcome::Success)
+    ));
+
+    assert!(
+        commands.iter().any(|command| {
+            *command == Command::meter_at(current_tick, "leg_tick_over_window", overflow)
+        }),
+        "expected leg_tick_over_window meter with overflow {overflow}"
+    );
 }
 
 #[test]
