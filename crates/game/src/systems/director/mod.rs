@@ -436,7 +436,7 @@ fn finalize_leg(
     };
 
     state.leg_tick = clamp_tick(
-        &mut *queue,
+        queue.as_mut(),
         mission_minutes,
         LEG_DURATION_TOLERANCE_TICKS,
         target_tick,
@@ -450,7 +450,7 @@ fn finalize_leg(
     if !pause.hard_paused_sp && matches!(state.status, LegStatus::Running) {
         let next_tick = state.leg_tick.saturating_add(1);
         state.leg_tick = clamp_tick(
-            &mut *queue,
+            queue.as_mut(),
             mission_minutes,
             LEG_DURATION_TOLERANCE_TICKS,
             target_tick,
