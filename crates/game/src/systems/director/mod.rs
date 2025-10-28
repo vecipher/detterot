@@ -106,6 +106,11 @@ pub struct SpawnMemory {
     pub last_spawned_enemies: u32,
 }
 
+#[derive(Resource, Default, Clone, Copy)]
+struct PhysicsCadence {
+    base_timestep: Option<Duration>,
+}
+
 #[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
 struct DirectorPhysicsSchedule;
 
@@ -147,6 +152,7 @@ impl Plugin for DirectorPlugin {
             .init_resource::<WheelInputQueue>()
             .init_resource::<SpawnMemory>()
             .init_resource::<LegContext>()
+            .init_resource::<PhysicsCadence>()
             .add_systems(Startup, setup_director)
             .add_systems(
                 FixedUpdate,
@@ -350,12 +356,31 @@ fn physics_step(world: &mut World) {
         }
     }
 
-    let base_delta = world.resource::<Time<Fixed>>().timestep();
+    let current_fixed = world.resource::<Time<Fixed>>().timestep();
+    let base_delta = {
+        let mut cadence = world.resource_mut::<PhysicsCadence>();
+        let entry = cadence.base_timestep.get_or_insert_with(|| {
+            if wheel.slowmo_enabled {
+                scale_duration(current_fixed, SLOWMO_DENOMINATOR, SLOWMO_NUMERATOR)
+            } else {
+                current_fixed
+            }
+        });
+        *entry
+    };
+
     let scaled_delta = if wheel.slowmo_enabled {
         scale_duration(base_delta, SLOWMO_NUMERATOR, SLOWMO_DENOMINATOR)
     } else {
         base_delta
     };
+
+    {
+        let mut fixed = world.resource_mut::<Time<Fixed>>();
+        if fixed.timestep() != scaled_delta {
+            fixed.set_timestep(scaled_delta);
+        }
+    }
 
     world.resource_mut::<Time>().advance_by(scaled_delta);
 
