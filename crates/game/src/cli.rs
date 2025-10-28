@@ -1,4 +1,4 @@
-use clap::{ArgAction, Parser, ValueEnum};
+use clap::{builder::BoolishValueParser, ArgAction, Parser, ValueEnum};
 
 use crate::systems::economy::Weather;
 
@@ -65,7 +65,13 @@ pub struct CliOptions {
     pub fixed_dt: Option<f64>,
     #[arg(long)]
     pub headless: bool,
-    #[arg(long = "continue-after-mismatch", action = ArgAction::SetTrue)]
+    #[arg(
+        long = "continue-after-mismatch",
+        action = ArgAction::Set,
+        num_args = 0..=1,
+        default_missing_value = "true",
+        value_parser = BoolishValueParser::new()
+    )]
     pub continue_after_mismatch: bool,
     #[arg(long = "debug-logs")]
     pub debug_logs: bool,
