@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+#[cfg(feature = "deterministic")]
+use bevy::ecs::schedule::ExecutorKind;
+
 pub mod sets {
     #![allow(non_camel_case_types)]
     use bevy::prelude::SystemSet;
@@ -36,4 +39,11 @@ pub fn configure(app: &mut App) {
         )
             .chain(),
     );
+
+    #[cfg(feature = "deterministic")]
+    {
+        app.edit_schedule(FixedUpdate, |schedule| {
+            schedule.set_executor_kind(ExecutorKind::SingleThreaded);
+        });
+    }
 }

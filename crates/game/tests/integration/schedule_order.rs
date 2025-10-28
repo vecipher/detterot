@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+#[cfg(feature = "deterministic")]
+use bevy::ecs::schedule::ExecutorKind;
+
 #[derive(Resource, Default)]
 struct OrderLog(Vec<&'static str>);
 
@@ -43,4 +46,16 @@ fn fixed_update_sets_chain_in_order() {
         log.0,
         vec!["director", "missions", "spawns", "physics", "cleanup"]
     );
+}
+
+#[cfg(feature = "deterministic")]
+#[test]
+fn fixed_update_executor_single_threaded_when_deterministic() {
+    let mut app = App::new();
+    game::scheduling::configure(&mut app);
+    app.finish();
+
+    app.edit_schedule(FixedUpdate, |schedule| {
+        assert_eq!(schedule.get_executor_kind(), ExecutorKind::SingleThreaded);
+    });
 }
