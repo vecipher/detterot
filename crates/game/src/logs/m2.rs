@@ -95,6 +95,34 @@ pub fn log_post_leg_summary(
     append_jsonl("post_leg_summary.jsonl", &value)
 }
 
+pub fn log_leg_duration_clamped(
+    mission_minutes: u32,
+    tolerance_ticks: u32,
+    attempted_tick: u32,
+    clamped_tick: u32,
+) -> anyhow::Result<()> {
+    if !enabled() {
+        return Ok(());
+    }
+
+    #[derive(Serialize)]
+    struct DurationClampLog {
+        mission_minutes: u32,
+        tolerance_ticks: u32,
+        attempted_tick: u32,
+        clamped_tick: u32,
+    }
+
+    let value = DurationClampLog {
+        mission_minutes,
+        tolerance_ticks,
+        attempted_tick,
+        clamped_tick,
+    };
+
+    append_jsonl("leg_duration_tolerance.jsonl", &value)
+}
+
 pub fn log_mission_result(
     name: &str,
     outcome: &str,
