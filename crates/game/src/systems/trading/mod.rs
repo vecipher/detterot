@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use bevy::prelude::*;
 
 use crate::scheduling::sets;
+use crate::systems::app_state::AppStatePlugin;
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
 use crate::systems::trading::inventory::Cargo;
 use crate::ui::hub_trade::HubTradeUiPlugin;
@@ -89,7 +90,8 @@ impl Plugin for TradingPlugin {
                 apply_trading_view_events.in_set(sets::DETTEROT_Input),
             )
             .add_plugins(HubTradeUiPlugin)
-            .add_plugins(RoutePlannerUiPlugin);
+            .add_plugins(RoutePlannerUiPlugin)
+            .add_plugins(AppStatePlugin);
     }
 }
 

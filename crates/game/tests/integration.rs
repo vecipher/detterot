@@ -2,6 +2,8 @@
 mod danger_sign;
 #[path = "integration/director_config_strict.rs"]
 mod director_config_strict;
+#[path = "integration/migrate_roundtrip.rs"]
+mod migrate_roundtrip;
 #[path = "integration/missions_cfg_link.rs"]
 mod missions_cfg_link;
 #[path = "integration/missions_determinism.rs"]
@@ -10,6 +12,8 @@ mod missions_determinism;
 mod physics_step;
 #[path = "integration/replay_golden.rs"]
 mod replay_golden;
+#[path = "integration/save_load_integration.rs"]
+mod save_load_integration;
 #[path = "integration/schedule_order.rs"]
 mod schedule_order;
 #[path = "integration/serde_roundtrip.rs"]

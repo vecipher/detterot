@@ -40,6 +40,7 @@ fn sample_save() -> SaveV1_1 {
         pp: Pp(5_100),
         rot: 12,
         debt_cents: MoneyCents(4_200),
+        wallet_cents: MoneyCents(9_900),
         inventory: vec![InventorySlot {
             commodity: CommodityId(9),
             amount: 33,

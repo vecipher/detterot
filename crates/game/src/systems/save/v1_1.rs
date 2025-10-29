@@ -53,6 +53,8 @@ pub struct SaveV1_1 {
     pub rot: u16,
     #[serde(default)]
     pub debt_cents: MoneyCents,
+    #[serde(default)]
+    pub wallet_cents: MoneyCents,
     pub inventory: Vec<InventorySlot>,
     pub pending_planting: Vec<PendingPlanting>,
     pub rng_cursors: Vec<RngCursor>,
@@ -75,6 +77,7 @@ impl From<legacy::SaveV1> for SaveV1_1 {
             pp: value.pp,
             rot: value.rot,
             debt_cents: value.debt_cents,
+            wallet_cents: MoneyCents::ZERO,
             inventory: value.inventory,
             pending_planting: value.pending_planting,
             rng_cursors: value.rng_cursors,
@@ -87,6 +90,29 @@ impl From<legacy::SaveV1> for SaveV1_1 {
 impl SaveV1_1 {
     pub fn upgrade_from_v1(value: legacy::SaveV1) -> Self {
         value.into()
+    }
+}
+
+impl Default for SaveV1_1 {
+    fn default() -> Self {
+        Self {
+            schema: SaveSchema::v1_1(),
+            econ_version: 0,
+            world_seed: 0,
+            day: EconomyDay(0),
+            di: Vec::new(),
+            di_overlay_bp: 0,
+            basis: Vec::new(),
+            pp: Pp(0),
+            rot: 0,
+            debt_cents: MoneyCents::ZERO,
+            wallet_cents: MoneyCents::ZERO,
+            inventory: Vec::new(),
+            pending_planting: Vec::new(),
+            rng_cursors: Vec::new(),
+            last_hub: None,
+            cargo: CargoSave::default(),
+        }
     }
 }
 

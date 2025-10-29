@@ -34,6 +34,7 @@
   "pp": 5100,
   "rot": 12,
   "debt_cents": 4200,
+  "wallet_cents": 9900,
   "inventory": [
     {
       "commodity": 9,
