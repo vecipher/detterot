@@ -6,19 +6,10 @@ use crate::systems::trading::inventory::Cargo;
 use crate::systems::trading::{TradingView, TradingViewState};
 use crate::ui::hub_trade::{ActiveHub, WalletBalance};
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Default)]
 pub struct AppSaveState {
     snapshot: SaveV1_1,
     last_view: Option<TradingView>,
-}
-
-impl Default for AppSaveState {
-    fn default() -> Self {
-        Self {
-            snapshot: SaveV1_1::default(),
-            last_view: None,
-        }
-    }
 }
 
 impl AppSaveState {
