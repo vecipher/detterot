@@ -35,7 +35,7 @@ pub fn price_view(hub: HubId, com: CommodityId, econ: &EconState, rp: &Rulepack)
         .basis_drivers
         .get(&hub)
         .copied()
-        .unwrap_or_else(|| BasisDrivers {
+        .unwrap_or(BasisDrivers {
             pp: econ.pp,
             weather: Weather::Clear,
             closed_routes: 0,

@@ -33,25 +33,27 @@ fn load_rulepack_fixture() -> game::systems::economy::Rulepack {
 }
 
 fn sample_app_state() -> AppState {
-    let mut econ = EconState::default();
-    econ.day = game::systems::economy::EconomyDay(3);
-    econ.di_bp = HashMap::from([
-        (CommodityId(1), BasisBp(120)),
-        (CommodityId(2), BasisBp(-80)),
-    ]);
-    econ.di_overlay_bp = 90;
-    econ.basis_bp = HashMap::from([
-        ((HubId(1), CommodityId(1)), BasisBp(45)),
-        ((HubId(1), CommodityId(2)), BasisBp(-30)),
-    ]);
-    econ.pp = Pp(5_100);
-    econ.rot_u16 = 12;
-    econ.pending_planting = vec![PendingPlanting {
-        hub: HubId(1),
-        size: 4,
-        age_days: 2,
-    }];
-    econ.debt_cents = MoneyCents(4_200);
+    let econ = EconState {
+        day: game::systems::economy::EconomyDay(3),
+        di_bp: HashMap::from([
+            (CommodityId(1), BasisBp(120)),
+            (CommodityId(2), BasisBp(-80)),
+        ]),
+        di_overlay_bp: 90,
+        basis_bp: HashMap::from([
+            ((HubId(1), CommodityId(1)), BasisBp(45)),
+            ((HubId(1), CommodityId(2)), BasisBp(-30)),
+        ]),
+        pp: Pp(5_100),
+        rot_u16: 12,
+        pending_planting: vec![PendingPlanting {
+            hub: HubId(1),
+            size: 4,
+            age_days: 2,
+        }],
+        debt_cents: MoneyCents(4_200),
+        ..Default::default()
+    };
 
     AppState {
         econ_version: 7,

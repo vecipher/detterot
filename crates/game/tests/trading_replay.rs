@@ -7,7 +7,7 @@ use game::app_state::AppState;
 use game::systems::command_queue::CommandQueue;
 use game::systems::economy::rulepack::load_rulepack;
 use game::systems::economy::{
-    step_economy_day, BasisBp, CommodityId, EconStepScope, HubId, MoneyCents, Pp,
+    step_economy_day, BasisBp, CommodityId, EconState, EconStepScope, HubId, MoneyCents, Pp,
 };
 use game::systems::trading::engine::{TradeKind, TradeResult, TradeTx};
 use game::systems::trading::inventory::Cargo;
@@ -161,37 +161,43 @@ fn seeded_app_state(seed: u64) -> AppState {
     use game::systems::economy::state::RngCursor;
     use game::systems::economy::EconomyDay;
 
-    let mut state = AppState::default();
-    state.econ_version = 7;
-    state.world_seed = 0x5000_0000 + seed;
-    state.last_hub = HUB;
-    state.wallet = MoneyCents(200_000 + (seed as i64) * 1_000);
-    state.econ.day = EconomyDay(2 + seed as u32);
-    state.econ.di_bp = HashMap::from([
-        (CommodityId(1), BasisBp(100 + (seed as i32) * 10)),
-        (CommodityId(2), BasisBp(-60 + (seed as i32) * 5)),
-        (CommodityId(3), BasisBp(25 - (seed as i32) * 3)),
-    ]);
-    state.econ.di_overlay_bp = 45 + seed as i32;
-    state.econ.basis_bp = HashMap::from([
-        ((HUB, CommodityId(1)), BasisBp(30 + (seed as i32) * 4)),
-        ((HUB, CommodityId(2)), BasisBp(-20 + (seed as i32) * 2)),
-        ((HUB, CommodityId(3)), BasisBp(10 - (seed as i32))),
-    ]);
-    state.econ.pp = Pp(5_000 + (seed as u16) * 150);
-    state.econ.rot_u16 = 8 + seed as u16;
-    state.econ.pending_planting = vec![];
-    state.econ.debt_cents = MoneyCents(10_000 + (seed as i64) * 500);
-    state.rng_cursors = vec![RngCursor {
-        label: "di".to_string(),
-        draws: (12 + seed as u32),
-    }];
-    state.cargo = Cargo {
-        capacity_mass_kg: 600,
-        capacity_volume_l: 400,
-        items: HashMap::from([(CommodityId(2), 1 + seed as u32)]),
+    let econ = EconState {
+        day: EconomyDay(2 + seed as u32),
+        di_bp: HashMap::from([
+            (CommodityId(1), BasisBp(100 + (seed as i32) * 10)),
+            (CommodityId(2), BasisBp(-60 + (seed as i32) * 5)),
+            (CommodityId(3), BasisBp(25 - (seed as i32) * 3)),
+        ]),
+        di_overlay_bp: 45 + seed as i32,
+        basis_bp: HashMap::from([
+            ((HUB, CommodityId(1)), BasisBp(30 + (seed as i32) * 4)),
+            ((HUB, CommodityId(2)), BasisBp(-20 + (seed as i32) * 2)),
+            ((HUB, CommodityId(3)), BasisBp(10 - (seed as i32))),
+        ]),
+        pp: Pp(5_000 + (seed as u16) * 150),
+        rot_u16: 8 + seed as u16,
+        pending_planting: vec![],
+        debt_cents: MoneyCents(10_000 + (seed as i64) * 500),
+        ..Default::default()
     };
-    state
+
+    AppState {
+        econ_version: 7,
+        world_seed: 0x5000_0000 + seed,
+        econ,
+        last_hub: HUB,
+        inventory: Vec::new(),
+        cargo: Cargo {
+            capacity_mass_kg: 600,
+            capacity_volume_l: 400,
+            items: HashMap::from([(CommodityId(2), 1 + seed as u32)]),
+        },
+        rng_cursors: vec![RngCursor {
+            label: "di".to_string(),
+            draws: 12 + seed as u32,
+        }],
+        wallet: MoneyCents(200_000 + (seed as i64) * 1_000),
+    }
 }
 
 fn scripted_buys(seed: u64) -> Vec<TradeTx> {
