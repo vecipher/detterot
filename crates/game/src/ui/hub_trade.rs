@@ -7,7 +7,7 @@ use crate::scheduling::sets;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::inventory::Cargo;
 use crate::systems::trading::types::{Commodities, CommoditySpec};
-use crate::systems::trading::{execute_trade, price_view, TradeKind, TradeTx};
+use crate::systems::trading::{execute_trade, price_view, TradeKind, TradeTx, TradingViewState};
 use crate::ui::styles;
 
 /// Plugin wiring the hub trade UI view models into the Bevy app.
@@ -34,6 +34,7 @@ impl Plugin for HubTradeUiPlugin {
                     update_cargo_wallet_panels,
                     update_commodity_list,
                     update_unit_steppers,
+                    update_trade_panel_visibility,
                 )
                     .chain()
                     .in_set(sets::DETTEROT_Cleanup),
@@ -119,6 +120,7 @@ pub struct SellUnitsEvent {
 /// Aggregated UI view model for the hub trade screen.
 #[derive(Resource, Default, Clone, Debug)]
 pub struct HubTradeViewModel {
+    pub is_visible: bool,
     pub di_ticker: DiTickerVm,
     pub commodity_list: CommodityListVm,
     pub driver_chips: DriverChipsVm,
@@ -197,6 +199,13 @@ pub struct UnitStepperVm {
     pub step: u32,
     pub max: u32,
     pub last_units: u32,
+}
+
+fn update_trade_panel_visibility(
+    view_state: Option<Res<TradingViewState>>,
+    mut vm: ResMut<HubTradeViewModel>,
+) {
+    vm.is_visible = view_state.map(|state| state.is_trading()).unwrap_or(true);
 }
 
 /// Internal resource tracking stepper settings and their last executed trades.
