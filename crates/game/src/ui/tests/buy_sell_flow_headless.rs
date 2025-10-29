@@ -40,7 +40,7 @@ fn buying_and_selling_updates_inventory_and_wallet() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     scheduling::configure(&mut app);
-    app.add_plugins(HubTradeUiPlugin::default());
+    app.add_plugins(HubTradeUiPlugin);
 
     let mut econ = EconState::default();
     econ.di_bp.insert(CommodityId(1), BasisBp(0));

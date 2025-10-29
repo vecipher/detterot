@@ -102,6 +102,7 @@ impl HubTradeCatalog {
     }
 }
 
+
 /// Event emitted by unit steppers to request a buy trade for a commodity.
 #[derive(Debug, Clone, PartialEq, Eq, Message)]
 pub struct BuyUnitsEvent {
@@ -278,20 +279,20 @@ fn update_driver_chips(
     };
     chips.push(DriverChipVm {
         label: "PP".to_string(),
-        value: format!("{}", pp_value),
+        value: pp_value.to_string(),
         colour: pp_colour,
     });
 
     chips.push(DriverChipVm {
         label: "Weather".to_string(),
-        value: format!("{}", format_weather(view.weather())),
+        value: format_weather(view.weather()).to_string(),
         colour: styles::accent(),
     });
 
     let closed_routes = view.closed_routes();
     chips.push(DriverChipVm {
         label: "Routes".to_string(),
-        value: format!("{}", closed_routes),
+        value: closed_routes.to_string(),
         colour: if closed_routes == 0 {
             styles::neutral()
         } else {
@@ -302,7 +303,7 @@ fn update_driver_chips(
     let stock_dev = view.stock_dev();
     chips.push(DriverChipVm {
         label: "Stock".to_string(),
-        value: format!("{}", stock_dev),
+        value: stock_dev.to_string(),
         colour: if stock_dev >= 0 {
             styles::positive()
         } else {
@@ -342,6 +343,7 @@ fn update_cargo_wallet_panels(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_commodity_list(
     econ: Res<EconState>,
     rulepack: Res<Rulepack>,
@@ -415,6 +417,7 @@ fn update_commodity_list(
     vm.commodity_list.selected = selected_index;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_unit_steppers(
     econ: Res<EconState>,
     rulepack: Res<Rulepack>,
@@ -460,6 +463,7 @@ fn update_unit_steppers(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drive_buy_units(
     mut events: MessageReader<BuyUnitsEvent>,
     mut cargo: ResMut<Cargo>,
@@ -497,7 +501,13 @@ fn drive_buy_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(
+            &tx,
+            &pricing,
+            &rulepack,
+            cargo.as_mut(),
+            &mut wallet_value,
+        ) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_buy_units = result.units_executed;
@@ -510,6 +520,7 @@ fn drive_buy_units(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drive_sell_units(
     mut events: MessageReader<SellUnitsEvent>,
     mut cargo: ResMut<Cargo>,
@@ -547,7 +558,13 @@ fn drive_sell_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(
+            &tx,
+            &pricing,
+            &rulepack,
+            cargo.as_mut(),
+            &mut wallet_value,
+        ) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_sell_units = result.units_executed;
@@ -610,7 +627,7 @@ fn max_units_affordable(
     let mut lo = 0u32;
     let mut hi = requested;
     while lo < hi {
-        let mid = lo + (hi - lo + 1) / 2;
+        let mid = lo + (hi - lo).div_ceil(2);
         let cost = trade_cost(unit_price, mid, fee_bp).as_i64();
         if cost <= balance {
             lo = mid;

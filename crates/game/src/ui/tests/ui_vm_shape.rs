@@ -40,10 +40,12 @@ fn view_models_reflect_resources() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     scheduling::configure(&mut app);
-    app.add_plugins(HubTradeUiPlugin::default());
+    app.add_plugins(HubTradeUiPlugin);
 
-    let mut econ = EconState::default();
-    econ.pp = Pp(6200);
+    let mut econ = EconState {
+        pp: Pp(6200),
+        ..Default::default()
+    };
     econ.di_bp.insert(CommodityId(1), BasisBp(120));
     econ.di_bp.insert(CommodityId(2), BasisBp(-45));
     econ.basis_bp
