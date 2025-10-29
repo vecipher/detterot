@@ -50,6 +50,20 @@ fn initialise_resources(app: &mut App) {
         });
         world.insert_resource(rulepack);
     }
+
+    if !world.contains_resource::<types::Commodities>() {
+        let path = default_commodities_path();
+        let path_str = path
+            .to_str()
+            .unwrap_or_else(|| panic!("commodities path is not valid UTF-8: {}", path.display()));
+        let commodities = types::load_commodities(path_str).unwrap_or_else(|err| {
+            panic!(
+                "failed to load commodity specs from {}: {err}",
+                path.display()
+            )
+        });
+        world.insert_resource(commodities);
+    }
 }
 
 fn default_rulepack_path() -> PathBuf {
@@ -61,3 +75,16 @@ fn default_rulepack_path() -> PathBuf {
 
     Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
 }
+
+fn default_commodities_path() -> PathBuf {
+    const DEFAULT: &str = "assets/trading/commodities.toml";
+    let candidate = Path::new(DEFAULT);
+    if candidate.exists() {
+        return candidate.to_path_buf();
+    }
+
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
+}
+
+#[cfg(test)]
+mod tests;
