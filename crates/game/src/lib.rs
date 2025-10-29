@@ -1,7 +1,10 @@
+pub mod app_state;
 pub mod cli;
 pub mod logs;
 pub mod scheduling;
 pub mod systems;
+pub mod ui;
+pub mod world;
 
 use std::fs;
 use std::path::PathBuf;
@@ -15,6 +18,7 @@ use repro::{
     canonical_json_bytes, from_canonical_json_bytes, hash_record, Command, Record, RecordMeta,
 };
 
+use crate::app_state::AppState;
 use crate::logs::m2;
 use cli::{CliOptions, Mode};
 use std::sync::Once;
@@ -23,6 +27,9 @@ use systems::command_queue::CommandQueue;
 use systems::director::director_cfg_path;
 use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use systems::economy::{Pp, RouteId, Weather};
+use systems::trading::TradingPlugin;
+use ui::hub_trade::HubTradePlugin;
+use ui::route_planner::RoutePlannerPlugin;
 
 pub fn run() -> Result<()> {
     let options = CliOptions::parse();
@@ -200,7 +207,11 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
         *fixed = BevyTime::<Fixed>::from_seconds(dt);
     }
     app.init_resource::<CommandQueue>();
+    app.init_resource::<AppState>();
     app.insert_resource(context);
+    app.add_plugins(TradingPlugin);
+    app.add_plugins(HubTradePlugin);
+    app.add_plugins(RoutePlannerPlugin);
     app.add_plugins(DirectorPlugin);
     app
 }

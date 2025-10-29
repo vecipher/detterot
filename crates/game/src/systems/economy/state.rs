@@ -25,6 +25,8 @@ pub struct EconState {
     pub di_bp: HashMap<CommodityId, BasisBp>,
     pub di_overlay_bp: i32,
     pub basis_bp: HashMap<(HubId, CommodityId), BasisBp>,
+    #[serde(skip)]
+    pub basis_drivers: HashMap<HubId, BasisDrivers>,
     pub pp: Pp,
     pub rot_u16: u16,
     pub pending_planting: Vec<PendingPlanting>,
@@ -38,6 +40,7 @@ impl Default for EconState {
             di_bp: HashMap::new(),
             di_overlay_bp: 0,
             basis_bp: HashMap::new(),
+            basis_drivers: HashMap::new(),
             pp: Pp(0),
             rot_u16: 0,
             pending_planting: Vec::new(),
@@ -195,6 +198,7 @@ pub fn step_economy_day(
         closed_routes: 0,
         stock_dev: 0,
     };
+    state.basis_drivers.insert(hub, drivers);
     for commodity in commodities {
         let key = (hub, commodity);
         let current = state.basis_bp.get(&key).copied().unwrap_or(BasisBp(0));
