@@ -50,6 +50,17 @@ impl Cargo {
         self.mass_capacity_used = 0;
         self.items.clear();
     }
+
+    /// Snapshot of the manifest sorted by commodity identifier.
+    pub fn manifest_snapshot(&self) -> Vec<(CommodityId, u32)> {
+        let mut entries: Vec<_> = self
+            .items
+            .iter()
+            .map(|(commodity, units)| (*commodity, *units))
+            .collect();
+        entries.sort_by_key(|(commodity, _)| commodity.0);
+        entries
+    }
 }
 
 #[cfg(test)]
@@ -77,5 +88,16 @@ mod tests {
         assert_eq!(cargo.capacity_used, 0);
         assert_eq!(cargo.units(CommodityId(5)), 0);
         assert!(cargo.is_empty());
+    }
+
+    #[test]
+    fn manifest_snapshot_returns_sorted_entries() {
+        let mut cargo = Cargo::default();
+        cargo.set_units(CommodityId(5), 3);
+        cargo.set_units(CommodityId(2), 1);
+        cargo.set_units(CommodityId(7), 0);
+
+        let manifest = cargo.manifest_snapshot();
+        assert_eq!(manifest, vec![(CommodityId(2), 1), (CommodityId(5), 3)]);
     }
 }
