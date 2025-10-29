@@ -26,7 +26,7 @@ pub fn migrate_to_latest(value: Value) -> Result<SaveV1_1, MigrateError> {
             match (schema.version.major, schema.version.minor) {
                 (1, 1) => serde_json::from_value(value).map_err(MigrateError::from),
                 (1, 0) => {
-                    let legacy = v1::from_value(value)?;
+                    let legacy = v1::from_value(strip_schema(value))?;
                     Ok(SaveV1_1::upgrade_from_v1(legacy))
                 }
                 (major, minor) => Err(MigrateError::UnsupportedVersion { major, minor }),
@@ -36,5 +36,15 @@ pub fn migrate_to_latest(value: Value) -> Result<SaveV1_1, MigrateError> {
             let legacy = v1::from_value(value)?;
             Ok(SaveV1_1::upgrade_from_v1(legacy))
         }
+    }
+}
+
+fn strip_schema(value: Value) -> Value {
+    match value {
+        Value::Object(mut map) => {
+            map.remove("schema");
+            Value::Object(map)
+        }
+        other => other,
     }
 }
