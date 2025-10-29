@@ -124,13 +124,18 @@ pub fn execute_trade(
     let new_wallet = (*wallet).saturating_add(wallet_delta);
     *wallet = new_wallet;
 
-    Ok(TradeResult {
+    let result = TradeResult {
         units_executed,
         unit_price,
         gross,
         fee,
         wallet_delta,
-    })
+    };
+
+    #[cfg(feature = "econ_logs")]
+    crate::logs::trading::log_trade(tx, &result, new_wallet);
+
+    Ok(result)
 }
 
 fn capacity_deltas(tx: &TradeTx, units: u32) -> (u32, u32) {
