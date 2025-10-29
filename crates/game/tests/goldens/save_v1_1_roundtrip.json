@@ -57,6 +57,8 @@
   "cargo": {
     "capacity_total": 40,
     "capacity_used": 21,
+    "mass_capacity_total": 120,
+    "mass_capacity_used": 76,
     "manifest": [
       {
         "commodity": 1,

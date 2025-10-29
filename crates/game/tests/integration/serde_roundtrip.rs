@@ -57,6 +57,8 @@ fn sample_save() -> SaveV1_1 {
         cargo: CargoSave {
             capacity_total: 40,
             capacity_used: 21,
+            mass_capacity_total: 120,
+            mass_capacity_used: 76,
             manifest: vec![
                 CargoSlot {
                     commodity: CommodityId(7),

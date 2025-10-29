@@ -118,6 +118,10 @@ pub struct CargoSave {
     pub capacity_total: u32,
     pub capacity_used: u32,
     #[serde(default)]
+    pub mass_capacity_total: u32,
+    #[serde(default)]
+    pub mass_capacity_used: u32,
+    #[serde(default)]
     pub manifest: Vec<CargoSlot>,
 }
 
