@@ -1,0 +1,44 @@
+[[commodity]]
+id = 1
+slug = "grain"
+display_name = "Grain"
+
+[[commodity]]
+id = 2
+slug = "textiles"
+display_name = "Textiles"
+
+[[commodity]]
+id = 3
+slug = "lumber"
+display_name = "Lumber"
+
+[[commodity]]
+id = 4
+slug = "metals"
+display_name = "Metals"
+
+[[commodity]]
+id = 5
+slug = "electronics"
+display_name = "Electronics"
+
+[[commodity]]
+id = 6
+slug = "chemicals"
+display_name = "Chemicals"
+
+[[commodity]]
+id = 7
+slug = "pharmaceuticals"
+display_name = "Pharmaceuticals"
+
+[[commodity]]
+id = 8
+slug = "luxury_goods"
+display_name = "Luxury Goods"
+
+[[commodity]]
+id = 9
+slug = "energy_cells"
+display_name = "Energy Cells"
