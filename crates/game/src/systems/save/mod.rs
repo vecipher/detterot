@@ -151,23 +151,28 @@ pub fn snapshot_from_app_state(state: &AppState) -> SaveV11 {
 }
 
 pub fn app_state_from_snapshot(snapshot: SaveV11) -> AppState {
-    let mut econ = EconState::default();
-    econ.day = snapshot.day;
-    econ.di_bp = snapshot
+    let di_bp = snapshot
         .di
         .iter()
         .map(|entry| (entry.commodity, entry.value))
         .collect();
-    econ.di_overlay_bp = snapshot.di_overlay_bp;
-    econ.basis_bp = snapshot
+    let basis_bp = snapshot
         .basis
         .iter()
         .map(|entry| ((entry.hub, entry.commodity), entry.value))
         .collect();
-    econ.pp = snapshot.pp;
-    econ.rot_u16 = snapshot.rot;
-    econ.pending_planting = snapshot.pending_planting.clone();
-    econ.debt_cents = snapshot.debt_cents;
+
+    let econ = EconState {
+        day: snapshot.day,
+        di_bp,
+        di_overlay_bp: snapshot.di_overlay_bp,
+        basis_bp,
+        pp: snapshot.pp,
+        rot_u16: snapshot.rot,
+        pending_planting: snapshot.pending_planting.clone(),
+        debt_cents: snapshot.debt_cents,
+        ..Default::default()
+    };
 
     AppState {
         econ_version: snapshot.econ_version,
