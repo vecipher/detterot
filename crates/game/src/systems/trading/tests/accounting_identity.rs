@@ -1,7 +1,10 @@
+use crate::systems::command_queue::CommandQueue;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents};
 use crate::systems::trading::{
-    execute_trade, inventory::Cargo, pricing_vm::price_view, TradeKind, TradeTx,
+    execute_trade, inventory::Cargo, meters, pricing_vm::price_view, TradeKind, TradeTx,
 };
+
+use repro::Command;
 
 use super::load_fixture_rulepack;
 
@@ -40,6 +43,8 @@ fn buy_trade_preserves_accounting_identity() {
     };
 
     let wallet_before = wallet;
+    let mut queue = CommandQueue::default();
+    queue.begin_tick(0);
     let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
 
     assert_eq!(result.units_executed, 4);
@@ -56,6 +61,20 @@ fn buy_trade_preserves_accounting_identity() {
     assert_eq!(cargo.units(commodity), 4);
     assert_eq!(cargo.capacity_used, 8);
     assert_eq!(cargo.mass_capacity_used, 12);
+
+    meters::record_trade(&mut queue, TradeKind::Buy, &result);
+    let expected_wallet_value = result.wallet_delta.as_i64();
+    assert!(expected_wallet_value >= i64::from(i32::MIN));
+    assert!(expected_wallet_value <= i64::from(i32::MAX));
+    let expected_wallet_value = expected_wallet_value as i32;
+    let commands = queue.drain();
+    assert_eq!(
+        commands,
+        vec![
+            Command::meter_at(0, meters::UI_CLICK_BUY, 1),
+            Command::meter_at(0, meters::WALLET_DELTA_BUY, expected_wallet_value),
+        ]
+    );
 }
 
 #[test]
@@ -85,6 +104,8 @@ fn sell_trade_preserves_accounting_identity() {
     };
 
     let wallet_before = wallet;
+    let mut queue = CommandQueue::default();
+    queue.begin_tick(0);
     let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
 
     assert_eq!(result.units_executed, 5);
@@ -100,4 +121,18 @@ fn sell_trade_preserves_accounting_identity() {
     assert_eq!(cargo.units(commodity), 1);
     assert_eq!(cargo.capacity_used, 2);
     assert_eq!(cargo.mass_capacity_used, 3);
+
+    meters::record_trade(&mut queue, TradeKind::Sell, &result);
+    let expected_wallet_value = result.wallet_delta.as_i64();
+    assert!(expected_wallet_value >= i64::from(i32::MIN));
+    assert!(expected_wallet_value <= i64::from(i32::MAX));
+    let expected_wallet_value = expected_wallet_value as i32;
+    let commands = queue.drain();
+    assert_eq!(
+        commands,
+        vec![
+            Command::meter_at(0, meters::UI_CLICK_SELL, 1),
+            Command::meter_at(0, meters::WALLET_DELTA_SELL, expected_wallet_value),
+        ]
+    );
 }
