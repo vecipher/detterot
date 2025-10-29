@@ -6,6 +6,7 @@ use crate::systems::economy::{load_rulepack, EconState, Rulepack};
 
 pub mod engine;
 pub mod inventory;
+pub mod meters;
 pub mod pricing_vm;
 pub mod types;
 
@@ -13,6 +14,8 @@ pub mod types;
 pub use engine::*;
 #[allow(unused_imports)]
 pub use inventory::*;
+#[allow(unused_imports)]
+pub use meters::*;
 #[allow(unused_imports)]
 pub use pricing_vm::*;
 #[allow(unused_imports)]
