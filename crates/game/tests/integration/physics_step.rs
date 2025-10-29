@@ -177,6 +177,7 @@ fn physics_step_slowmo_preserves_fixed_cadence() {
     let expected_substeps = expected_substeps(cadence);
     let baseline_substeps = app.world().resource::<SubstepCount>().0;
     assert_eq!(baseline_substeps, expected_substeps);
+    let baseline_fixed = app.world().resource::<Time<Fixed>>().timestep();
 
     app.world_mut()
         .resource_scope(|world, mut queue: Mut<CommandQueue>| {
@@ -187,7 +188,9 @@ fn physics_step_slowmo_preserves_fixed_cadence() {
 
     step_once(&mut app);
     let slowmo_substeps = app.world().resource::<SubstepCount>().0;
+    let slowmo_fixed = app.world().resource::<Time<Fixed>>().timestep();
     assert_eq!(slowmo_substeps, expected_substeps);
+    assert_eq!(slowmo_fixed, baseline_fixed);
 }
 
 #[cfg(feature = "deterministic")]
