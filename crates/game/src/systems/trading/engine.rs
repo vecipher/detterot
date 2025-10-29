@@ -175,7 +175,7 @@ fn max_units_affordable(
     let mut lo = 0u32;
     let mut hi = requested;
     while lo < hi {
-        let mid = lo + (hi - lo + 1) / 2;
+        let mid = lo + (hi - lo).div_ceil(2);
         let cost = trade_cost(unit_price, mid, fee_bp).as_i64();
         if cost <= balance {
             lo = mid;
