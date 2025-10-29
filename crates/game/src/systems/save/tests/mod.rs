@@ -24,6 +24,8 @@ fn legacy_payloads_upgrade_with_defaults() {
     assert!(snapshot.last_hub.is_none());
     assert_eq!(snapshot.cargo.capacity_total, 0);
     assert_eq!(snapshot.cargo.capacity_used, 0);
+    assert_eq!(snapshot.cargo.mass_capacity_total, 0);
+    assert_eq!(snapshot.cargo.mass_capacity_used, 0);
     assert!(snapshot.cargo.manifest.is_empty());
 }
 

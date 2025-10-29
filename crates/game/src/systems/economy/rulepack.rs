@@ -30,6 +30,8 @@ pub struct Rulepack {
     pub pp: PpCfg,
     /// Pricing multiplier bounds expressed in basis points.
     pub pricing: PricingCfg,
+    /// Trading configuration such as transaction fees.
+    pub trading: TradingCfg,
 }
 
 /// Configuration for the Daily Index (DI) that anchors commodity price levels.
@@ -163,6 +165,14 @@ pub struct PricingCfg {
     pub min_multiplier_bp: i32,
     /// Maximum allowed multiplier (e.g., 4000 bp = 40% premium).
     pub max_multiplier_bp: i32,
+}
+
+/// Trading subsystem configuration parameters.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TradingCfg {
+    /// Fee applied to the gross value of a trade (basis points).
+    pub transaction_fee_bp: i32,
 }
 
 #[derive(Debug, Error)]

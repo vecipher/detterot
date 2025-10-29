@@ -33,7 +33,7 @@ pub use rounding::{bankers_round_cents, round_down_to_cents};
 #[allow(unused_imports)]
 pub use rulepack::{
     load_rulepack, BasisCfg, BasisWeatherCfg, DiCfg, InterestCfg, PpCfg, PricingCfg, RotCfg,
-    Rulepack, RulepackError,
+    Rulepack, RulepackError, TradingCfg,
 };
 #[allow(unused_imports)]
 pub use state::{step_economy_day, EconDelta, EconState, EconStepScope};

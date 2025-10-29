@@ -4,10 +4,13 @@ use bevy::prelude::*;
 
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
 
+pub mod engine;
 pub mod inventory;
 pub mod pricing_vm;
 pub mod types;
 
+#[allow(unused_imports)]
+pub use engine::*;
 #[allow(unused_imports)]
 pub use inventory::*;
 #[allow(unused_imports)]

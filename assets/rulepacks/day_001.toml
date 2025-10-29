@@ -98,3 +98,8 @@ pull_decay_bp = 50
 [pricing]
 min_multiplier_bp = -3000
 max_multiplier_bp = 4000
+
+# Trading subsystem configuration.
+[trading]
+# Fee applied to the gross value of a trade (bp).
+transaction_fee_bp = 75
