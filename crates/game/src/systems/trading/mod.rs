@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use bevy::prelude::*;
 
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
+use crate::world::WorldIndex;
 
 pub mod engine;
 pub mod inventory;
@@ -70,6 +71,17 @@ fn initialise_resources(app: &mut App) {
         });
         world.insert_resource(commodities);
     }
+
+    if !world.contains_resource::<WorldIndex>() {
+        let path = default_world_index_path();
+        let path_str = path
+            .to_str()
+            .unwrap_or_else(|| panic!("world index path is not valid UTF-8: {}", path.display()));
+        let index = WorldIndex::from_path(path_str).unwrap_or_else(|err| {
+            panic!("failed to load world index from {}: {err}", path.display())
+        });
+        world.insert_resource(index);
+    }
 }
 
 fn default_rulepack_path() -> PathBuf {
@@ -84,6 +96,16 @@ fn default_rulepack_path() -> PathBuf {
 
 fn default_commodities_path() -> PathBuf {
     const DEFAULT: &str = "assets/trading/commodities.toml";
+    let candidate = Path::new(DEFAULT);
+    if candidate.exists() {
+        return candidate.to_path_buf();
+    }
+
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
+}
+
+fn default_world_index_path() -> PathBuf {
+    const DEFAULT: &str = "assets/world/hubs_min.toml";
     let candidate = Path::new(DEFAULT);
     if candidate.exists() {
         return candidate.to_path_buf();

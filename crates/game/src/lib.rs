@@ -3,6 +3,7 @@ pub mod logs;
 pub mod scheduling;
 pub mod systems;
 pub mod ui;
+pub mod world;
 
 use std::fs;
 use std::path::PathBuf;
