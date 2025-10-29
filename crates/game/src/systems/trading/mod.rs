@@ -2,7 +2,11 @@ use std::path::{Path, PathBuf};
 
 use bevy::prelude::*;
 
+use crate::scheduling::sets;
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
+use crate::systems::trading::inventory::Cargo;
+use crate::ui::hub_trade::HubTradeUiPlugin;
+use crate::ui::route_planner::RoutePlannerUiPlugin;
 use crate::world::WorldIndex;
 
 pub mod engine;
@@ -22,6 +26,49 @@ pub use pricing_vm::*;
 #[allow(unused_imports)]
 pub use types::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TradingView {
+    Trading,
+    RoutePlanner,
+}
+
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TradingViewState {
+    current: TradingView,
+}
+
+impl Default for TradingViewState {
+    fn default() -> Self {
+        Self {
+            current: TradingView::Trading,
+        }
+    }
+}
+
+impl TradingViewState {
+    pub fn current(&self) -> TradingView {
+        self.current
+    }
+
+    pub fn is_trading(&self) -> bool {
+        matches!(self.current, TradingView::Trading)
+    }
+
+    pub fn is_route_planner(&self) -> bool {
+        matches!(self.current, TradingView::RoutePlanner)
+    }
+
+    fn set(&mut self, view: TradingView) {
+        self.current = view;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Message)]
+pub struct EnterTradingViewEvent;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Message)]
+pub struct EnterRoutePlannerViewEvent;
+
 /// Bevy plugin that wires the trading subsystem into the core simulation.
 ///
 /// The plugin ensures that read-only trading resources sourced from the
@@ -34,6 +81,15 @@ pub struct TradingPlugin;
 impl Plugin for TradingPlugin {
     fn build(&self, app: &mut App) {
         initialise_resources(app);
+        app.init_resource::<TradingViewState>()
+            .add_message::<EnterTradingViewEvent>()
+            .add_message::<EnterRoutePlannerViewEvent>()
+            .add_systems(
+                FixedUpdate,
+                apply_trading_view_events.in_set(sets::DETTEROT_Input),
+            )
+            .add_plugins(HubTradeUiPlugin)
+            .add_plugins(RoutePlannerUiPlugin);
     }
 }
 
@@ -81,6 +137,34 @@ fn initialise_resources(app: &mut App) {
             panic!("failed to load world index from {}: {err}", path.display())
         });
         world.insert_resource(index);
+    }
+
+    if !world.contains_resource::<Cargo>() {
+        world.insert_resource(Cargo::default());
+    }
+}
+
+fn apply_trading_view_events(
+    mut state: ResMut<TradingViewState>,
+    mut enter_trading: MessageReader<EnterTradingViewEvent>,
+    mut enter_planner: MessageReader<EnterRoutePlannerViewEvent>,
+) {
+    if enter_trading.is_empty() && enter_planner.is_empty() {
+        return;
+    }
+
+    let mut pending = None;
+
+    for _ in enter_trading.read() {
+        pending = Some(TradingView::Trading);
+    }
+
+    for _ in enter_planner.read() {
+        pending = Some(TradingView::RoutePlanner);
+    }
+
+    if let Some(view) = pending {
+        state.set(view);
     }
 }
 
