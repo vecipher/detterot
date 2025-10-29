@@ -15,6 +15,10 @@ pub struct Cargo {
     pub capacity_total: u32,
     /// Portion of the cargo hold currently in use.
     pub capacity_used: u32,
+    /// Maximum mass that can be carried across all cargo (in arbitrary units).
+    pub mass_capacity_total: u32,
+    /// Mass currently consumed by the cargo manifest.
+    pub mass_capacity_used: u32,
     items: HashMap<CommodityId, u32>,
 }
 
@@ -42,6 +46,8 @@ impl Cargo {
     pub fn clear(&mut self) {
         self.capacity_total = 0;
         self.capacity_used = 0;
+        self.mass_capacity_total = 0;
+        self.mass_capacity_used = 0;
         self.items.clear();
     }
 }
