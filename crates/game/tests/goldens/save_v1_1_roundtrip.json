@@ -1,4 +1,10 @@
 {
+  "schema": {
+    "version": {
+      "major": 1,
+      "minor": 1
+    }
+  },
   "econ_version": 7,
   "world_seed": 42,
   "day": 3,
@@ -46,5 +52,20 @@
       "label": "di",
       "draws": 24
     }
-  ]
+  ],
+  "last_hub": 3,
+  "cargo": {
+    "capacity_total": 40,
+    "capacity_used": 21,
+    "manifest": [
+      {
+        "commodity": 1,
+        "units": 3
+      },
+      {
+        "commodity": 7,
+        "units": 10
+      }
+    ]
+  }
 }
