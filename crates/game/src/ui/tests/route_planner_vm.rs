@@ -39,7 +39,7 @@ fn load_commodities_specs() -> Commodities {
 }
 
 fn load_world_index() -> WorldIndex {
-    WorldIndex::from_path(&asset_path("assets/world/hubs_min.toml")).unwrap()
+    WorldIndex::from_path(asset_path("assets/world/hubs_min.toml")).unwrap()
 }
 
 #[test]
@@ -50,9 +50,10 @@ fn planner_vm_reflects_world_index() {
     app.add_plugins(RoutePlannerUiPlugin);
 
     app.insert_resource(load_world_index());
-    let mut econ = EconState::default();
-    econ.day = EconomyDay(5);
-    app.insert_resource(econ);
+    app.insert_resource(EconState {
+        day: EconomyDay(5),
+        ..Default::default()
+    });
     app.insert_resource(ActiveHub(HubId(0)));
     app.insert_resource(LegContext {
         world_seed: 123,
