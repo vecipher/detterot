@@ -102,7 +102,6 @@ impl HubTradeCatalog {
     }
 }
 
-
 /// Event emitted by unit steppers to request a buy trade for a commodity.
 #[derive(Debug, Clone, PartialEq, Eq, Message)]
 pub struct BuyUnitsEvent {
@@ -501,13 +500,7 @@ fn drive_buy_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(
-            &tx,
-            &pricing,
-            &rulepack,
-            cargo.as_mut(),
-            &mut wallet_value,
-        ) {
+        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_buy_units = result.units_executed;
@@ -558,13 +551,7 @@ fn drive_sell_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(
-            &tx,
-            &pricing,
-            &rulepack,
-            cargo.as_mut(),
-            &mut wallet_value,
-        ) {
+        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_sell_units = result.units_executed;
