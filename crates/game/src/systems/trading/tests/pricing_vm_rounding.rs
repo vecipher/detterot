@@ -18,9 +18,11 @@ fn price_view_resolves_half_cent_ties_like_compute_price() {
     let commodity = CommodityId(1);
     let hub = HubId(7);
 
-    let mut state = EconState::default();
-    state.di_bp = HashMap::from([(commodity, BasisBp(-500))]);
-    state.basis_bp.insert((hub, commodity), BasisBp(-500));
+    let mut state = EconState {
+        di_bp: HashMap::from([(commodity, BasisBp(-500))]),
+        basis_bp: HashMap::from([((hub, commodity), BasisBp(-500))]),
+        ..EconState::default()
+    };
 
     let view = price_view(&state, &pricing);
 
@@ -46,9 +48,11 @@ fn price_view_preserves_final_flooring() {
     let commodity = CommodityId(2);
     let hub = HubId(3);
 
-    let mut state = EconState::default();
-    state.di_bp.insert(commodity, BasisBp(3_333));
-    state.basis_bp.insert((hub, commodity), BasisBp(-444));
+    let state = EconState {
+        di_bp: HashMap::from([(commodity, BasisBp(3_333))]),
+        basis_bp: HashMap::from([((hub, commodity), BasisBp(-444))]),
+        ..EconState::default()
+    };
 
     let view = price_view(&state, &pricing);
 
