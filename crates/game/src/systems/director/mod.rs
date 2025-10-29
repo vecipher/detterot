@@ -442,6 +442,9 @@ fn physics_step(world: &mut World) {
 
     world.resource_mut::<Time>().advance_by(scaled_delta);
 
+    #[cfg(feature = "avian_physics")]
+    let _ = base_delta;
+
     for _ in 0..steps_to_run {
         #[cfg(not(feature = "avian_physics"))]
         physics_stub::advance(world, base_delta);
