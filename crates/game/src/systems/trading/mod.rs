@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::scheduling::sets;
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
+use crate::systems::trading::inventory::Cargo;
 use crate::ui::hub_trade::HubTradeUiPlugin;
 use crate::ui::route_planner::RoutePlannerUiPlugin;
 use crate::world::WorldIndex;
@@ -136,6 +137,10 @@ fn initialise_resources(app: &mut App) {
             panic!("failed to load world index from {}: {err}", path.display())
         });
         world.insert_resource(index);
+    }
+
+    if !world.contains_resource::<Cargo>() {
+        world.insert_resource(Cargo::default());
     }
 }
 
