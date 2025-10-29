@@ -19,7 +19,7 @@ pub struct WorldIndex {
 
 impl WorldIndex {
     /// Loads the world index from the provided TOML source string.
-    pub fn from_str(raw: &str) -> Result<Self, WorldIndexLoadError> {
+    fn parse_from_str(raw: &str) -> Result<Self, WorldIndexLoadError> {
         let doc: WorldIndexDocument = toml::from_str(raw)?;
         if doc.schema != SCHEMA_VERSION {
             return Err(WorldIndexLoadError::UnsupportedSchema {
@@ -86,7 +86,7 @@ impl WorldIndex {
     /// Loads the world index from the provided file path.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, WorldIndexLoadError> {
         let raw = fs::read_to_string(path)?;
-        Self::from_str(&raw)
+        Self::parse_from_str(&raw)
     }
 
     /// Returns an iterator over all known hub identifiers.
@@ -151,6 +151,14 @@ impl WorldIndex {
         }
 
         hints.last().map(|hint| hint.weather)
+    }
+}
+
+impl std::str::FromStr for WorldIndex {
+    type Err = WorldIndexLoadError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        WorldIndex::parse_from_str(raw)
     }
 }
 
