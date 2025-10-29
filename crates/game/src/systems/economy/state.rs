@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -19,7 +20,7 @@ use super::planting::PendingPlanting;
 const RNG_TAG_DI: u32 = 0;
 const RNG_TAG_BASIS: u32 = 1;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 pub struct EconState {
     pub day: EconomyDay,
     pub di_bp: HashMap<CommodityId, BasisBp>,
