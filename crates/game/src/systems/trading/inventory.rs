@@ -58,9 +58,11 @@ mod tests {
 
     #[test]
     fn clear_resets_capacity_and_inventory() {
-        let mut cargo = Cargo::default();
-        cargo.capacity_total = 10;
-        cargo.capacity_used = 6;
+        let mut cargo = Cargo {
+            capacity_total: 10,
+            capacity_used: 6,
+            ..Default::default()
+        };
         cargo.set_units(CommodityId(5), 3);
 
         cargo.clear();
