@@ -1,14 +1,7 @@
 use std::collections::HashMap;
 
 use crate::systems::economy::{
-    compute_price,
-    rulepack::PricingCfg,
-    BasisBp,
-    CommodityId,
-    EconState,
-    HubId,
-    MoneyCents,
-    Pp,
+    compute_price, rulepack::PricingCfg, BasisBp, CommodityId, EconState, HubId, MoneyCents, Pp,
     Weather,
 };
 
@@ -32,10 +25,7 @@ pub struct PriceView<'a> {
 impl<'a> PriceView<'a> {
     /// Returns the global daily index (DI) multiplier for a commodity.
     pub fn di_bp(&self, commodity: CommodityId) -> BasisBp {
-        self.di_bp
-            .get(&commodity)
-            .copied()
-            .unwrap_or(BasisBp(0))
+        self.di_bp.get(&commodity).copied().unwrap_or(BasisBp(0))
     }
 
     /// Returns the hub-specific basis multiplier for a commodity quote.
@@ -68,12 +58,7 @@ impl<'a> PriceView<'a> {
 
     /// Computes a quoted transaction price by applying the current DI and basis
     /// multipliers to the provided base price.
-    pub fn quote(
-        &self,
-        hub: HubId,
-        commodity: CommodityId,
-        base_price: MoneyCents,
-    ) -> MoneyCents {
+    pub fn quote(&self, hub: HubId, commodity: CommodityId, base_price: MoneyCents) -> MoneyCents {
         let di = self.di_bp(commodity);
         let basis = self.basis_bp(hub, commodity);
         compute_price(base_price, di, basis, self.pricing)
