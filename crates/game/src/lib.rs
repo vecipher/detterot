@@ -2,6 +2,7 @@ pub mod cli;
 pub mod logs;
 pub mod scheduling;
 pub mod systems;
+pub mod ui;
 
 use std::fs;
 use std::path::PathBuf;
