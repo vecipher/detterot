@@ -5,7 +5,10 @@ use bevy::prelude::*;
 use crate::scheduling;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Pp, Rulepack};
 use crate::systems::trading::inventory::Cargo;
-use crate::systems::trading::types::{load_commodities, Commodities};
+use crate::systems::trading::types::{
+    clear_global_commodities, global_commodities_guard, load_commodities, set_global_commodities,
+    Commodities,
+};
 use crate::ui::hub_trade::{
     ActiveHub, HubTradeCatalog, HubTradeUiPlugin, HubTradeViewModel, SelectedCommodity,
     WalletBalance,
@@ -37,6 +40,7 @@ fn asset_path(relative: &str) -> String {
 
 #[test]
 fn view_models_reflect_resources() {
+    let _guard = global_commodities_guard();
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     scheduling::configure(&mut app);
@@ -56,6 +60,7 @@ fn view_models_reflect_resources() {
 
     app.insert_resource(load_rulepack());
     let specs = load_specs();
+    set_global_commodities(specs.clone());
     app.insert_resource(specs.clone());
 
     let mut catalog = HubTradeCatalog::default();
@@ -128,4 +133,6 @@ fn view_models_reflect_resources() {
         .find(|chip| chip.label == "PP")
         .unwrap();
     assert_eq!(pp_chip.value, "6200");
+
+    clear_global_commodities();
 }

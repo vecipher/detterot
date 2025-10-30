@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use crate::scheduling::sets;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::inventory::Cargo;
-use crate::systems::trading::types::{Commodities, CommoditySpec};
+use crate::systems::trading::types::{self, Commodities, CommoditySpec};
 use crate::systems::trading::{
     execute_trade, price_view, trading_drivers, TradeKind, TradeTx, TradingViewState,
 };
@@ -29,6 +29,7 @@ impl Plugin for HubTradeUiPlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    sync_global_commodities,
                     drive_buy_units,
                     drive_sell_units,
                     update_di_ticker,
@@ -366,6 +367,17 @@ fn update_cargo_wallet_panels(
 
     if wallet.is_changed() {
         vm.wallet_panel = WalletPanelVm { balance: wallet.0 };
+    }
+}
+
+fn sync_global_commodities(commodities: Option<Res<Commodities>>) {
+    let Some(commodities) = commodities else {
+        return;
+    };
+
+    if commodities.is_added() || commodities.is_changed() {
+        let snapshot = commodities.as_ref().clone();
+        types::set_global_commodities(snapshot);
     }
 }
 
