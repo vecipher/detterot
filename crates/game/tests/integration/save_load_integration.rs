@@ -66,6 +66,7 @@ fn trade_save_load_roundtrip() {
                 units: 1,
             }],
         },
+        last_clamp_hit: false,
     };
 
     let mut app = App::new();

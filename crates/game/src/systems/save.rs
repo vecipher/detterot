@@ -101,6 +101,7 @@ impl SaveV1_1 {
         econ.rot_u16 = self.rot;
         econ.pending_planting = self.pending_planting.clone();
         econ.debt_cents = self.debt_cents;
+        econ.last_clamp_hit = self.last_clamp_hit;
     }
 
     pub fn update_from_econ_state(&mut self, econ: &EconState) {
@@ -130,6 +131,7 @@ impl SaveV1_1 {
         self.rot = econ.rot_u16;
         self.debt_cents = econ.debt_cents;
         self.pending_planting = econ.pending_planting.clone();
+        self.last_clamp_hit = econ.last_clamp_hit;
     }
 
     pub fn hydrate_cargo(&self, cargo: &mut Cargo) {

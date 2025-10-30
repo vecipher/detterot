@@ -4,7 +4,9 @@ use bevy::log::warn;
 use bevy::prelude::*;
 
 use crate::scheduling::sets;
-use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
+use crate::systems::economy::{
+    BasisBp, CommodityId, EconState, EconomyDay, HubId, MoneyCents, Rulepack,
+};
 use crate::systems::trading::inventory::Cargo;
 use crate::systems::trading::types::{self, Commodities, CommoditySpec};
 use crate::systems::trading::{
@@ -140,6 +142,8 @@ pub struct SellUnitsEvent {
 #[derive(Resource, Default, Clone, Debug)]
 pub struct HubTradeViewModel {
     pub is_visible: bool,
+    pub day: EconomyDay,
+    pub di_clamp_hit: bool,
     pub di_ticker: DiTickerVm,
     pub commodity_list: CommodityListVm,
     pub driver_chips: DriverChipsVm,
@@ -262,6 +266,8 @@ fn update_di_ticker(
             entries.push(build_di_entry(spec, econ.di_bp.get(&spec.id()).copied()))
         }
         vm.di_ticker.entries = entries;
+        vm.day = econ.day;
+        vm.di_clamp_hit = econ.last_clamp_hit;
     }
 }
 
