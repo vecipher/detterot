@@ -1,8 +1,12 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
-use crate::systems::economy::{CommodityId, HubId, MoneyCents, Rulepack};
+use crate::systems::economy::{CommodityId, EconState, HubId, MoneyCents, Rulepack};
 
-use super::{inventory::Cargo, pricing_vm::PriceView};
+use super::{
+    inventory::Cargo,
+    pricing_vm::price_view,
+    types::{self, CommoditySpec},
+};
 
 /// Direction of a requested trade transaction.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -18,9 +22,6 @@ pub struct TradeTx {
     pub hub: HubId,
     pub commodity: CommodityId,
     pub units: u32,
-    pub base_price: MoneyCents,
-    pub volume_per_unit: u32,
-    pub mass_per_unit: u32,
 }
 
 /// Outcome of executing a trade.
@@ -28,8 +29,9 @@ pub struct TradeTx {
 pub struct TradeResult {
     pub units_executed: u32,
     pub unit_price: MoneyCents,
-    pub gross: MoneyCents,
+    pub subtotal: MoneyCents,
     pub fee: MoneyCents,
+    pub total_cents: MoneyCents,
     pub wallet_delta: MoneyCents,
 }
 
@@ -38,8 +40,9 @@ impl TradeResult {
         Self {
             units_executed: 0,
             unit_price,
-            gross: MoneyCents::ZERO,
+            subtotal: MoneyCents::ZERO,
             fee: MoneyCents::ZERO,
+            total_cents: MoneyCents::ZERO,
             wallet_delta: MoneyCents::ZERO,
         }
     }
@@ -49,11 +52,19 @@ impl TradeResult {
 /// volume, and wallet constraints.
 pub fn execute_trade(
     tx: &TradeTx,
-    view: &PriceView,
-    rulepack: &Rulepack,
+    state: &EconState,
     cargo: &mut Cargo,
     wallet: &mut MoneyCents,
+    rulepack: &Rulepack,
 ) -> Result<TradeResult> {
+    let CommoditySpec {
+        volume_per_unit_l: volume_per_unit,
+        mass_per_unit_kg: mass_per_unit,
+        ..
+    } = types::commodity_spec(tx.commodity)
+        .ok_or_else(|| anyhow!("missing commodity metadata for {:?}", tx.commodity))?;
+
+    let view = price_view(tx.hub, tx.commodity, state, rulepack)?;
     let unit_price = view.price_cents();
     if tx.units == 0 {
         return Ok(TradeResult::empty(unit_price));
@@ -67,15 +78,15 @@ pub fn execute_trade(
             let available_mass = cargo
                 .mass_capacity_total
                 .saturating_sub(cargo.mass_capacity_used);
-            let volume_cap = if tx.volume_per_unit == 0 {
+            let volume_cap = if volume_per_unit == 0 {
                 requested_units
             } else {
-                available_volume / tx.volume_per_unit
+                available_volume / volume_per_unit
             };
-            let mass_cap = if tx.mass_per_unit == 0 {
+            let mass_cap = if mass_per_unit == 0 {
                 requested_units
             } else {
-                available_mass / tx.mass_per_unit
+                available_mass / mass_per_unit
             };
             let wallet_cap = max_units_affordable(*wallet, unit_price, fee_bp, requested_units);
             requested_units
@@ -93,16 +104,15 @@ pub fn execute_trade(
         return Ok(TradeResult::empty(unit_price));
     }
 
-    let gross = multiply(unit_price, units_executed);
-    let fee = apply_basis_points(gross, fee_bp);
-    let (volume_delta, mass_delta) = capacity_deltas(tx, units_executed);
-    let wallet_delta = match tx.kind {
-        TradeKind::Buy => {
-            let total_cost = gross.saturating_add(fee);
-            negate(total_cost)
-        }
-        TradeKind::Sell => gross.saturating_sub(fee),
+    let subtotal = multiply(unit_price, units_executed);
+    let fee = apply_basis_points(subtotal, fee_bp);
+    let (volume_delta, mass_delta) =
+        capacity_deltas(volume_per_unit, mass_per_unit, units_executed);
+    let total_cents = match tx.kind {
+        TradeKind::Buy => subtotal.saturating_add(fee),
+        TradeKind::Sell => negate(subtotal.saturating_sub(fee)),
     };
+    let wallet_delta = negate(total_cents);
 
     match tx.kind {
         TradeKind::Buy => {
@@ -127,8 +137,9 @@ pub fn execute_trade(
     let result = TradeResult {
         units_executed,
         unit_price,
-        gross,
+        subtotal,
         fee,
+        total_cents,
         wallet_delta,
     };
 
@@ -138,9 +149,9 @@ pub fn execute_trade(
     Ok(result)
 }
 
-fn capacity_deltas(tx: &TradeTx, units: u32) -> (u32, u32) {
-    let volume = units.saturating_mul(tx.volume_per_unit);
-    let mass = units.saturating_mul(tx.mass_per_unit);
+fn capacity_deltas(volume_per_unit: u32, mass_per_unit: u32, units: u32) -> (u32, u32) {
+    let volume = units.saturating_mul(volume_per_unit);
+    let mass = units.saturating_mul(mass_per_unit);
     (volume, mass)
 }
 

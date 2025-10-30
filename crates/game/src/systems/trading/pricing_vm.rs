@@ -1,8 +1,12 @@
+use anyhow::{anyhow, Result};
+
 use crate::systems::economy::{
     compute_price,
-    rulepack::{BasisCfg, PricingCfg, Rulepack},
+    rulepack::{BasisCfg, Rulepack},
     BasisBp, CommodityId, EconState, HubId, MoneyCents, Pp, Weather,
 };
+
+use super::types;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TradingDrivers {
@@ -56,11 +60,6 @@ impl PriceView {
     pub fn drivers(&self) -> TradingDrivers {
         self.drivers
     }
-
-    pub fn with_price(mut self, base_price: MoneyCents, pricing: &PricingCfg) -> Self {
-        self.price_cents = compute_price(base_price, self.di_bp, self.basis_bp, pricing);
-        self
-    }
 }
 
 fn derive_drivers(state: &EconState, _basis_cfg: &BasisCfg) -> TradingDrivers {
@@ -81,7 +80,11 @@ pub fn price_view(
     commodity: CommodityId,
     state: &EconState,
     rulepack: &Rulepack,
-) -> PriceView {
+) -> Result<PriceView> {
+    let Some(spec) = types::commodity_spec(commodity) else {
+        return Err(anyhow!("missing commodity metadata for {:?}", commodity));
+    };
+
     let di_bp = state.di_bp.get(&commodity).copied().unwrap_or(BasisBp(0));
     let basis_bp = state
         .basis_bp
@@ -91,10 +94,12 @@ pub fn price_view(
 
     let drivers = trading_drivers(state, rulepack);
 
-    PriceView {
+    let price_cents = compute_price(spec.base_price(), di_bp, basis_bp, &rulepack.pricing);
+
+    Ok(PriceView {
         di_bp,
         basis_bp,
-        price_cents: MoneyCents::ZERO,
+        price_cents,
         drivers,
-    }
+    })
 }

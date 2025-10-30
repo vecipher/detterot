@@ -129,7 +129,11 @@ fn initialise_resources(app: &mut App) {
                 path.display()
             )
         });
+        types::set_global_commodities(commodities.clone());
         world.insert_resource(commodities);
+    } else {
+        let commodities = world.resource::<types::Commodities>().clone();
+        types::set_global_commodities(commodities);
     }
 
     if !world.contains_resource::<WorldIndex>() {
