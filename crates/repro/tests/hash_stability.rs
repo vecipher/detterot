@@ -1,5 +1,15 @@
 use repro::{hash_record, Command, InputEvent, Record, RecordMeta};
 
+fn sample_commands() -> Vec<Command> {
+    vec![
+        Command::meter_at(0, "danger_score", 9001),
+        Command::meter_at(0, "ui_click_buy", 1),
+        Command::meter_at(0, "wallet_delta_buy", -1_250),
+        Command::meter_at(0, "ui_click_sell", 1),
+        Command::meter_at(0, "wallet_delta_sell", 1_250),
+    ]
+}
+
 #[test]
 fn identical_records_hash_the_same() {
     let record = Record {
@@ -18,7 +28,7 @@ fn identical_records_hash_the_same() {
             player_rating: 58,
             prior_danger_score: None,
         },
-        commands: vec![Command::meter_at(0, "danger_score", 9001)],
+        commands: sample_commands(),
         inputs: Vec::new(),
     };
 
@@ -45,7 +55,7 @@ fn hash_contract_fields_change_digest() {
             player_rating: 58,
             prior_danger_score: None,
         },
-        commands: vec![Command::meter_at(0, "danger_score", 9001)],
+        commands: sample_commands(),
         inputs: Vec::new(),
     };
 
@@ -94,7 +104,7 @@ fn non_contract_meta_fields_do_not_change_digest() {
             player_rating: 58,
             prior_danger_score: None,
         },
-        commands: vec![Command::meter_at(0, "danger_score", 9001)],
+        commands: sample_commands(),
         inputs: Vec::new(),
     };
 
@@ -147,7 +157,7 @@ fn inputs_are_excluded_from_digest() {
             player_rating: 58,
             prior_danger_score: None,
         },
-        commands: vec![Command::meter_at(0, "danger_score", 9001)],
+        commands: sample_commands(),
         inputs: Vec::new(),
     };
 

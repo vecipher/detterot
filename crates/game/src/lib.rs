@@ -2,6 +2,8 @@ pub mod cli;
 pub mod logs;
 pub mod scheduling;
 pub mod systems;
+pub mod ui;
+pub mod world;
 
 use std::fs;
 use std::path::PathBuf;
@@ -23,6 +25,7 @@ use systems::command_queue::CommandQueue;
 use systems::director::director_cfg_path;
 use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use systems::economy::{Pp, RouteId, Weather};
+use systems::trading::TradingPlugin;
 
 pub fn run() -> Result<()> {
     let options = CliOptions::parse();
@@ -201,6 +204,7 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
     }
     app.init_resource::<CommandQueue>();
     app.insert_resource(context);
+    ensure_trading_plugin(&mut app);
     app.add_plugins(DirectorPlugin);
     app
 }
@@ -236,6 +240,7 @@ fn add_minimal_plugins(app: &mut App) {
     let plugins = configure_task_pool(plugins);
     app.add_plugins(plugins);
     app.add_plugins(bevy::input::InputPlugin);
+    ensure_trading_plugin(app);
 }
 
 #[derive(Default)]
@@ -243,6 +248,18 @@ struct WindowingPlaceholderPlugin;
 
 impl Plugin for WindowingPlaceholderPlugin {
     fn build(&self, _app: &mut App) {}
+}
+
+#[derive(Resource, Default)]
+struct TradingPluginMarker;
+
+fn ensure_trading_plugin(app: &mut App) {
+    if app.world().contains_resource::<TradingPluginMarker>() {
+        return;
+    }
+
+    app.add_plugins(TradingPlugin);
+    app.world_mut().insert_resource(TradingPluginMarker);
 }
 
 #[cfg(feature = "deterministic")]

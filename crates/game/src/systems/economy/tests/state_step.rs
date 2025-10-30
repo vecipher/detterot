@@ -38,6 +38,7 @@ fn state_step_matches_golden() {
             age_days: 0,
         }],
         debt_cents: MoneyCents(10_000),
+        last_clamp_hit: false,
     };
 
     let mut history = Vec::new();
@@ -79,6 +80,7 @@ fn hub_only_scope_skips_global_progression() {
         rot_u16: 0,
         pending_planting: Vec::new(),
         debt_cents: MoneyCents(1_000),
+        last_clamp_hit: false,
     };
 
     let first_delta =

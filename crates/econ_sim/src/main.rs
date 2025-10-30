@@ -116,6 +116,7 @@ fn seed_state(args: &Args, rp: &Rulepack) -> (EconState, Vec<HubMetadata>) {
         rot_u16: 0,
         pending_planting: Vec::new(),
         debt_cents: MoneyCents(debt_value),
+        last_clamp_hit: false,
     };
     let hubs = (0..args.hubs)
         .map(|idx| HubMetadata { id: HubId(idx + 1) })

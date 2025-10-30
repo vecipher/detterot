@@ -1,0 +1,41 @@
+schema = 1
+
+[[hub]]
+id = 0
+neighbors = [1, 2]
+
+  [[hub.weather_hint]]
+  weather = "Clear"
+  weight = 3
+
+  [[hub.weather_hint]]
+  weather = "Rains"
+  weight = 1
+
+[[hub]]
+id = 1
+neighbors = [0, 2]
+
+  [[hub.weather_hint]]
+  weather = "Fog"
+  weight = 2
+
+  [[hub.weather_hint]]
+  weather = "Windy"
+  weight = 1
+
+  [[hub.weather_hint]]
+  weather = "Clear"
+  weight = 1
+
+[[hub]]
+id = 2
+neighbors = [0, 1]
+
+  [[hub.weather_hint]]
+  weather = "Windy"
+  weight = 2
+
+  [[hub.weather_hint]]
+  weather = "Clear"
+  weight = 2

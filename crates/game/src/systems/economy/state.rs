@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -19,7 +20,7 @@ use super::planting::PendingPlanting;
 const RNG_TAG_DI: u32 = 0;
 const RNG_TAG_BASIS: u32 = 1;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 pub struct EconState {
     pub day: EconomyDay,
     pub di_bp: HashMap<CommodityId, BasisBp>,
@@ -29,6 +30,8 @@ pub struct EconState {
     pub rot_u16: u16,
     pub pending_planting: Vec<PendingPlanting>,
     pub debt_cents: MoneyCents,
+    #[serde(default)]
+    pub last_clamp_hit: bool,
 }
 
 impl Default for EconState {
@@ -42,6 +45,7 @@ impl Default for EconState {
             rot_u16: 0,
             pending_planting: Vec::new(),
             debt_cents: MoneyCents::ZERO,
+            last_clamp_hit: false,
         }
     }
 }
@@ -119,6 +123,10 @@ pub fn step_economy_day(
         EconStepScope::HubOnly => EconomyDay(state.day.0.saturating_sub(1)),
     };
     let mut delta = EconDelta::new(day, hub);
+
+    if matches!(scope, EconStepScope::GlobalAndHub) {
+        state.last_clamp_hit = false;
+    }
 
     if matches!(scope, EconStepScope::GlobalAndHub) {
         // 1. DI step
@@ -221,6 +229,10 @@ pub fn step_economy_day(
 
     if matches!(scope, EconStepScope::GlobalAndHub) {
         log::log_econ_tick(&delta, &rp.pricing);
+    }
+
+    if !delta.clamps_hit.is_empty() {
+        state.last_clamp_hit = true;
     }
 
     delta

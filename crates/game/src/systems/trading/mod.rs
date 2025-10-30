@@ -1,0 +1,217 @@
+use std::path::{Path, PathBuf};
+
+use bevy::prelude::*;
+
+use crate::scheduling::sets;
+use crate::systems::app_state::AppStatePlugin;
+use crate::systems::economy::{load_rulepack, EconState, Rulepack};
+use crate::systems::trading::inventory::Cargo;
+use crate::ui::hub_trade::{HubTradeCatalog, HubTradeUiPlugin};
+use crate::ui::route_planner::RoutePlannerUiPlugin;
+use crate::world::WorldIndex;
+
+pub mod engine;
+pub mod inventory;
+pub mod meters;
+pub mod pricing_vm;
+pub mod types;
+
+#[allow(unused_imports)]
+pub use engine::*;
+#[allow(unused_imports)]
+pub use inventory::*;
+#[allow(unused_imports)]
+pub use meters::*;
+#[allow(unused_imports)]
+pub use pricing_vm::*;
+#[allow(unused_imports)]
+pub use types::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TradingView {
+    Trading,
+    RoutePlanner,
+}
+
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TradingViewState {
+    current: TradingView,
+}
+
+impl Default for TradingViewState {
+    fn default() -> Self {
+        Self {
+            current: TradingView::Trading,
+        }
+    }
+}
+
+impl TradingViewState {
+    pub fn current(&self) -> TradingView {
+        self.current
+    }
+
+    pub fn is_trading(&self) -> bool {
+        matches!(self.current, TradingView::Trading)
+    }
+
+    pub fn is_route_planner(&self) -> bool {
+        matches!(self.current, TradingView::RoutePlanner)
+    }
+
+    fn set(&mut self, view: TradingView) {
+        self.current = view;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Message)]
+pub struct EnterTradingViewEvent;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Message)]
+pub struct EnterRoutePlannerViewEvent;
+
+/// Bevy plugin that wires the trading subsystem into the core simulation.
+///
+/// The plugin ensures that read-only trading resources sourced from the
+/// existing economy module are initialised exactly once. These resources are
+/// required by forthcoming trading systems (pricing view models, inventory
+/// management, etc.) and remain immutable so that no cyclic dependencies are
+/// introduced between trading and economy code.
+pub struct TradingPlugin;
+
+impl Plugin for TradingPlugin {
+    fn build(&self, app: &mut App) {
+        initialise_resources(app);
+        app.init_resource::<TradingViewState>()
+            .init_resource::<HubTradeCatalog>()
+            .add_message::<EnterTradingViewEvent>()
+            .add_message::<EnterRoutePlannerViewEvent>()
+            .add_systems(
+                FixedUpdate,
+                apply_trading_view_events.in_set(sets::DETTEROT_Input),
+            )
+            .add_systems(Startup, seed_hub_trade_catalog)
+            .add_plugins(HubTradeUiPlugin)
+            .add_plugins(RoutePlannerUiPlugin)
+            .add_plugins(AppStatePlugin);
+    }
+}
+
+fn initialise_resources(app: &mut App) {
+    let world = app.world_mut();
+
+    if !world.contains_resource::<EconState>() {
+        world.insert_resource(EconState::default());
+    }
+
+    if !world.contains_resource::<Rulepack>() {
+        let path = default_rulepack_path();
+        let path_str = path
+            .to_str()
+            .unwrap_or_else(|| panic!("rulepack path is not valid UTF-8: {}", path.display()));
+        let rulepack = load_rulepack(path_str).unwrap_or_else(|err| {
+            panic!(
+                "failed to load trading rulepack from {}: {err}",
+                path.display()
+            )
+        });
+        world.insert_resource(rulepack);
+    }
+
+    if !world.contains_resource::<types::Commodities>() {
+        let path = default_commodities_path();
+        let path_str = path
+            .to_str()
+            .unwrap_or_else(|| panic!("commodities path is not valid UTF-8: {}", path.display()));
+        let commodities = types::load_commodities(path_str).unwrap_or_else(|err| {
+            panic!(
+                "failed to load commodity specs from {}: {err}",
+                path.display()
+            )
+        });
+        types::set_global_commodities(commodities.clone());
+        world.insert_resource(commodities);
+    } else {
+        let commodities = world.resource::<types::Commodities>().clone();
+        types::set_global_commodities(commodities);
+    }
+
+    if !world.contains_resource::<WorldIndex>() {
+        let path = default_world_index_path();
+        let path_str = path
+            .to_str()
+            .unwrap_or_else(|| panic!("world index path is not valid UTF-8: {}", path.display()));
+        let index = WorldIndex::from_path(path_str).unwrap_or_else(|err| {
+            panic!("failed to load world index from {}: {err}", path.display())
+        });
+        world.insert_resource(index);
+    }
+
+    if !world.contains_resource::<Cargo>() {
+        world.insert_resource(Cargo::default());
+    }
+}
+
+fn seed_hub_trade_catalog(
+    mut catalog: ResMut<HubTradeCatalog>,
+    commodities: Res<types::Commodities>,
+) {
+    catalog.rebuild_from_specs(&commodities);
+}
+
+fn apply_trading_view_events(
+    mut state: ResMut<TradingViewState>,
+    mut enter_trading: MessageReader<EnterTradingViewEvent>,
+    mut enter_planner: MessageReader<EnterRoutePlannerViewEvent>,
+) {
+    if enter_trading.is_empty() && enter_planner.is_empty() {
+        return;
+    }
+
+    let mut pending = None;
+
+    for _ in enter_trading.read() {
+        pending = Some(TradingView::Trading);
+    }
+
+    for _ in enter_planner.read() {
+        pending = Some(TradingView::RoutePlanner);
+    }
+
+    if let Some(view) = pending {
+        state.set(view);
+    }
+}
+
+fn default_rulepack_path() -> PathBuf {
+    const DEFAULT: &str = "assets/rulepacks/day_001.toml";
+    let candidate = Path::new(DEFAULT);
+    if candidate.exists() {
+        return candidate.to_path_buf();
+    }
+
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
+}
+
+fn default_commodities_path() -> PathBuf {
+    const DEFAULT: &str = "assets/trading/commodities.toml";
+    let candidate = Path::new(DEFAULT);
+    if candidate.exists() {
+        return candidate.to_path_buf();
+    }
+
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
+}
+
+fn default_world_index_path() -> PathBuf {
+    const DEFAULT: &str = "assets/world/hubs_min.toml";
+    let candidate = Path::new(DEFAULT);
+    if candidate.exists() {
+        return candidate.to_path_buf();
+    }
+
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../{DEFAULT}"))
+}
+
+#[cfg(test)]
+mod tests;

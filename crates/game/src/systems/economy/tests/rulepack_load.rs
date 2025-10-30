@@ -22,6 +22,7 @@ fn loads_day_001_rulepack() {
     assert_eq!(pack.di.long_run_mean_bp, 75);
     assert_eq!(pack.basis.weather.rains_bp, -35);
     assert_eq!(pack.interest.per_leg_cap_bp, 1_200);
+    assert_eq!(pack.trading.transaction_fee_bp, 75);
 }
 
 #[test]

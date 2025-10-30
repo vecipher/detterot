@@ -2,6 +2,7 @@
 
 use std::fs;
 
+use bevy::prelude::Resource;
 use blake3::Hasher;
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,7 @@ use thiserror::Error;
 /// pricing power, etc.) and stores values primarily expressed in basis points
 /// (bp) unless otherwise noted. Basis points are interpreted as 1/100th of a
 /// percent (10_000 bp = 100%).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 #[serde(deny_unknown_fields)]
 pub struct Rulepack {
     /// Day-index configuration expressed in basis points.
@@ -29,6 +30,8 @@ pub struct Rulepack {
     pub pp: PpCfg,
     /// Pricing multiplier bounds expressed in basis points.
     pub pricing: PricingCfg,
+    /// Trading configuration such as transaction fees.
+    pub trading: TradingCfg,
 }
 
 /// Configuration for the Daily Index (DI) that anchors commodity price levels.
@@ -162,6 +165,14 @@ pub struct PricingCfg {
     pub min_multiplier_bp: i32,
     /// Maximum allowed multiplier (e.g., 4000 bp = 40% premium).
     pub max_multiplier_bp: i32,
+}
+
+/// Trading subsystem configuration parameters.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TradingCfg {
+    /// Fee applied to the gross value of a trade (basis points).
+    pub transaction_fee_bp: i32,
 }
 
 #[derive(Debug, Error)]
