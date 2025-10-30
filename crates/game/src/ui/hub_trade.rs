@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use bevy::ecs::hierarchy::ChildSpawnerCommands;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy::ui::UiRect;
 
@@ -17,6 +18,24 @@ use crate::systems::trading::types::{CommodityCatalog, TradingConfig};
 use crate::ui::styles::{
     COLOR_ACCENT_NEG, COLOR_ACCENT_POS, COLOR_BG, COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY,
 };
+
+type ButtonInteractionFilter = (Changed<Interaction>, With<Button>);
+type StepperInteraction<'w> = (&'w Interaction, &'w StepperButton);
+type TradeInteraction<'w> = (&'w Interaction, &'w TradeButton);
+type UiTextParamSet<'w, 's> = ParamSet<
+    'w,
+    's,
+    (
+        Query<'w, 's, &'static mut Text, With<TickerText>>,
+        Query<'w, 's, &'static mut Text, With<WalletText>>,
+        Query<'w, 's, &'static mut Text, With<CargoSummaryText>>,
+    ),
+>;
+
+#[derive(SystemParam)]
+struct UiTextQueries<'w, 's> {
+    sets: UiTextParamSet<'w, 's>,
+}
 
 #[derive(Resource, Default)]
 pub struct HubTradeUiState {
@@ -353,11 +372,7 @@ fn apply_hub_trade_view(
     mut commands: Commands,
     mut model: ResMut<HubTradeUiModel>,
     mut ui_state: ResMut<HubTradeUiState>,
-    mut text_queries: ParamSet<(
-        Query<&mut Text, With<TickerText>>,
-        Query<&mut Text, With<WalletText>>,
-        Query<&mut Text, With<CargoSummaryText>>,
-    )>,
+    mut text_queries: UiTextQueries,
     table_query: Query<Entity, With<CommodityTableRoot>>,
     existing_rows: Query<Entity, With<CommodityRowUi>>,
     children_query: Query<&Children>,
@@ -371,13 +386,13 @@ fn apply_hub_trade_view(
 
     ui_state.remember(view.clone());
 
-    if let Some(mut ticker) = text_queries.p0().iter_mut().next() {
+    if let Some(mut ticker) = text_queries.sets.p0().iter_mut().next() {
         ticker.0 = ticker_line(&view);
     }
-    if let Some(mut wallet_text) = text_queries.p1().iter_mut().next() {
+    if let Some(mut wallet_text) = text_queries.sets.p1().iter_mut().next() {
         wallet_text.0 = wallet_line(&view);
     }
-    if let Some(mut cargo_text) = text_queries.p2().iter_mut().next() {
+    if let Some(mut cargo_text) = text_queries.sets.p2().iter_mut().next() {
         cargo_text.0 = cargo_line(&view);
     }
 
@@ -399,7 +414,7 @@ fn apply_hub_trade_view(
 }
 
 fn handle_stepper_buttons(
-    mut interactions: Query<(&Interaction, &StepperButton), (Changed<Interaction>, With<Button>)>,
+    mut interactions: Query<StepperInteraction<'_>, ButtonInteractionFilter>,
     mut model: ResMut<HubTradeUiModel>,
     mut queue: ResMut<CommandQueue>,
     mut texts: Query<(&mut Text, &StepperValueText)>,
@@ -440,7 +455,7 @@ fn handle_stepper_buttons(
 }
 
 fn handle_trade_buttons(
-    mut interactions: Query<(&Interaction, &TradeButton), (Changed<Interaction>, With<Button>)>,
+    mut interactions: Query<TradeInteraction<'_>, ButtonInteractionFilter>,
     mut model: ResMut<HubTradeUiModel>,
     mut ui_state: ResMut<HubTradeUiState>,
     mut queue: ResMut<CommandQueue>,

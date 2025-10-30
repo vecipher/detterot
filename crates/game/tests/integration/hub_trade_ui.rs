@@ -7,6 +7,7 @@ use game::systems::command_queue::CommandQueue;
 use game::systems::economy::rulepack::load_rulepack;
 use game::systems::economy::{HubId, MoneyCents, Rulepack};
 use game::systems::trading::engine::TradeKind;
+use game::systems::trading::inventory::Cargo;
 use game::systems::trading::types::{CommodityCatalog, TradingConfig};
 use game::ui::hub_trade::{
     build_view, HubTradePlugin, HubTradeUiModel, HubTradeUiState, StepperButton, TradeButton,
@@ -35,11 +36,16 @@ fn stepper_buttons_update_units_and_meter_queue() {
     install_globals();
     let rp = load_rulepack_fixture();
 
-    let mut app_state = AppState::default();
-    app_state.wallet = MoneyCents(500_000);
-    app_state.last_hub = HubId(1);
-    app_state.cargo.capacity_mass_kg = 1_000;
-    app_state.cargo.capacity_volume_l = 1_000;
+    let app_state = AppState {
+        wallet: MoneyCents(500_000),
+        last_hub: HubId(1),
+        cargo: Cargo {
+            capacity_mass_kg: 1_000,
+            capacity_volume_l: 1_000,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     let view = build_view(
         HubId(1),
@@ -109,11 +115,16 @@ fn trade_buttons_execute_actions_and_refresh_view() {
     install_globals();
     let rp = load_rulepack_fixture();
 
-    let mut app_state = AppState::default();
-    app_state.wallet = MoneyCents(600_000);
-    app_state.last_hub = HubId(1);
-    app_state.cargo.capacity_mass_kg = 1_000;
-    app_state.cargo.capacity_volume_l = 1_000;
+    let app_state = AppState {
+        wallet: MoneyCents(600_000),
+        last_hub: HubId(1),
+        cargo: Cargo {
+            capacity_mass_kg: 1_000,
+            capacity_volume_l: 1_000,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     let view = build_view(
         HubId(1),
