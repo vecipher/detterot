@@ -7,7 +7,9 @@ use crate::scheduling::sets;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::inventory::Cargo;
 use crate::systems::trading::types::{Commodities, CommoditySpec};
-use crate::systems::trading::{execute_trade, price_view, TradeKind, TradeTx, TradingViewState};
+use crate::systems::trading::{
+    execute_trade, price_view, trading_drivers, TradeKind, TradeTx, TradingViewState,
+};
 use crate::ui::styles;
 
 /// Plugin wiring the hub trade UI view models into the Bevy app.
@@ -289,10 +291,10 @@ fn update_driver_chips(
         return;
     }
 
-    let view = price_view(&econ, &rulepack.pricing);
+    let drivers = trading_drivers(&econ, &rulepack);
     let mut chips = Vec::new();
 
-    let pp_value = view.pp().0;
+    let pp_value = drivers.pp().0;
     let neutral_pp = rulepack.pp.neutral_pp;
     let pp_colour = if pp_value > neutral_pp {
         styles::positive()
@@ -309,11 +311,11 @@ fn update_driver_chips(
 
     chips.push(DriverChipVm {
         label: "Weather".to_string(),
-        value: format_weather(view.weather()).to_string(),
+        value: format_weather(drivers.weather()).to_string(),
         colour: styles::accent(),
     });
 
-    let closed_routes = view.closed_routes();
+    let closed_routes = drivers.closed_routes();
     chips.push(DriverChipVm {
         label: "Routes".to_string(),
         value: closed_routes.to_string(),
@@ -324,7 +326,7 @@ fn update_driver_chips(
         },
     });
 
-    let stock_dev = view.stock_dev();
+    let stock_dev = drivers.stock_dev();
     chips.push(DriverChipVm {
         label: "Stock".to_string(),
         value: stock_dev.to_string(),
@@ -390,7 +392,6 @@ fn update_commodity_list(
         return;
     }
 
-    let pricing = price_view(&econ, &rulepack.pricing);
     let mut rows = Vec::new();
     let mut selected_index = None;
 
@@ -399,14 +400,11 @@ fn update_commodity_list(
             continue;
         };
 
-        let di_bp = econ.di_bp.get(&spec.id()).copied().unwrap_or(BasisBp(0)).0;
-        let basis_bp = econ
-            .basis_bp
-            .get(&(hub.0, spec.id()))
-            .copied()
-            .unwrap_or(BasisBp(0))
-            .0;
-        let unit_price = pricing.quote(hub.0, spec.id(), meta.base_price);
+        let view = price_view(hub.0, spec.id(), &econ, &rulepack)
+            .with_price(meta.base_price, &rulepack.pricing);
+        let di_bp = view.di_bp().0;
+        let basis_bp = view.basis_bp().0;
+        let unit_price = view.price_cents();
         let held_units = cargo.units(spec.id());
         let max_buy = compute_max_buy_units(
             &cargo,
@@ -453,11 +451,11 @@ fn update_unit_steppers(
     mut steppers: ResMut<UnitSteppersState>,
     mut vm: ResMut<HubTradeViewModel>,
 ) {
-    let pricing = price_view(&econ, &rulepack.pricing);
-
     if let Some(commodity) = selected.0 {
         if let Some(meta) = catalog.get(commodity) {
-            let unit_price = pricing.quote(hub.0, commodity, meta.base_price);
+            let view = price_view(hub.0, commodity, &econ, &rulepack)
+                .with_price(meta.base_price, &rulepack.pricing);
+            let unit_price = view.price_cents();
             steppers.max_buy = compute_max_buy_units(
                 &cargo,
                 meta,
@@ -502,8 +500,6 @@ fn drive_buy_units(
         return;
     }
 
-    let pricing = price_view(&econ, &rulepack.pricing);
-
     for event in events.read() {
         if event.units == 0 {
             continue;
@@ -515,6 +511,8 @@ fn drive_buy_units(
         if requested == 0 {
             continue;
         }
+        let view = price_view(hub.0, event.commodity, &econ, &rulepack)
+            .with_price(meta.base_price, &rulepack.pricing);
         let tx = TradeTx {
             kind: TradeKind::Buy,
             hub: hub.0,
@@ -525,7 +523,7 @@ fn drive_buy_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(&tx, &view, &rulepack, cargo.as_mut(), &mut wallet_value) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_buy_units = result.units_executed;
@@ -553,8 +551,6 @@ fn drive_sell_units(
         return;
     }
 
-    let pricing = price_view(&econ, &rulepack.pricing);
-
     for event in events.read() {
         if event.units == 0 {
             continue;
@@ -566,6 +562,8 @@ fn drive_sell_units(
         if requested == 0 {
             continue;
         }
+        let view = price_view(hub.0, event.commodity, &econ, &rulepack)
+            .with_price(meta.base_price, &rulepack.pricing);
         let tx = TradeTx {
             kind: TradeKind::Sell,
             hub: hub.0,
@@ -576,7 +574,7 @@ fn drive_sell_units(
             mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &pricing, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(&tx, &view, &rulepack, cargo.as_mut(), &mut wallet_value) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_sell_units = result.units_executed;

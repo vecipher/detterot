@@ -241,7 +241,6 @@ fn run_seed(seed: &TradingSeed, rulepack: &Rulepack) -> Record {
         .insert((seed.hub, seed.commodity), seed.basis_bp);
     state.pp = Pp(seed.meta.pp);
 
-    let price_view = price_view(&state, &rulepack.pricing);
     let mut cargo = seed.cargo.build();
     let mut wallet = seed.initial_wallet;
     let mut queue = CommandQueue::default();
@@ -257,8 +256,10 @@ fn run_seed(seed: &TradingSeed, rulepack: &Rulepack) -> Record {
             volume_per_unit: seed.volume_per_unit,
             mass_per_unit: seed.mass_per_unit,
         };
-        let result = execute_trade(&tx, &price_view, rulepack, &mut cargo, &mut wallet)
-            .expect("trade execution");
+        let view = price_view(seed.hub, seed.commodity, &state, rulepack)
+            .with_price(tx.base_price, &rulepack.pricing);
+        let result =
+            execute_trade(&tx, &view, rulepack, &mut cargo, &mut wallet).expect("trade execution");
         meters::record_trade(&mut queue, action.kind, &result);
     }
 

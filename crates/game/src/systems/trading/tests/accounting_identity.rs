@@ -1,5 +1,5 @@
 use crate::systems::command_queue::CommandQueue;
-use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents};
+use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::{
     execute_trade, inventory::Cargo, meters, pricing_vm::price_view, TradeKind, TradeTx,
 };
@@ -8,24 +8,21 @@ use repro::Command;
 
 use super::load_fixture_rulepack;
 
-fn setup_view(
-    commodity: CommodityId,
-    hub: HubId,
-) -> (EconState, crate::systems::economy::PricingCfg) {
+fn setup_view(commodity: CommodityId, hub: HubId) -> (EconState, Rulepack) {
     let mut state = EconState::default();
     state.di_bp.insert(commodity, BasisBp(0));
     state.basis_bp.insert((hub, commodity), BasisBp(0));
     let pack = load_fixture_rulepack();
-    (state, pack.pricing)
+    (state, pack)
 }
 
 #[test]
 fn buy_trade_preserves_accounting_identity() {
     let commodity = CommodityId(3);
     let hub = HubId(2);
-    let (state, pricing) = setup_view(commodity, hub);
-    let rulepack = load_fixture_rulepack();
-    let view = price_view(&state, &pricing);
+    let (state, rulepack) = setup_view(commodity, hub);
+    let view = price_view(hub, commodity, &state, &rulepack)
+        .with_price(MoneyCents(250), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 20;
@@ -81,9 +78,9 @@ fn buy_trade_preserves_accounting_identity() {
 fn sell_trade_preserves_accounting_identity() {
     let commodity = CommodityId(4);
     let hub = HubId(1);
-    let (state, pricing) = setup_view(commodity, hub);
-    let rulepack = load_fixture_rulepack();
-    let view = price_view(&state, &pricing);
+    let (state, rulepack) = setup_view(commodity, hub);
+    let view = price_view(hub, commodity, &state, &rulepack)
+        .with_price(MoneyCents(250), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 30;
