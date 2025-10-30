@@ -70,5 +70,6 @@
         "units": 10
       }
     ]
-  }
+  },
+  "last_clamp_hit": false
 }
