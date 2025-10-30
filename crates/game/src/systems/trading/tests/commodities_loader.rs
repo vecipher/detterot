@@ -9,7 +9,7 @@ fn rejects_unknown_fields() {
     let mut tmp = NamedTempFile::new().expect("tmp file");
     write!(
         tmp,
-        "[[commodity]]\nid = 1\nslug = \"grain\"\ndisplay_name = \"Grain\"\nbase_price_cents = 250\nmass_per_unit_kg = 2\nvolume_per_unit_l = 4\nunknown_key = \"nope\"\n"
+        "[[commodity]]\nid = 1\nslug = \"grain\"\ndisplay_name = \"Grain\"\nunknown_key = \"nope\"\n"
     )
     .expect("write tmp");
 

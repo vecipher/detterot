@@ -55,11 +55,11 @@ fn view_models_reflect_resources() {
     app.insert_resource(econ);
 
     app.insert_resource(load_rulepack());
-    let specs = load_specs();
-    app.insert_resource(specs.clone());
+    app.insert_resource(load_specs());
 
     let mut catalog = HubTradeCatalog::default();
-    catalog.rebuild_from_specs(&specs);
+    catalog.insert(CommodityId(1), MoneyCents(250), 2, 3);
+    catalog.insert(CommodityId(2), MoneyCents(400), 1, 1);
     app.insert_resource(catalog);
 
     let mut cargo = Cargo::default();
@@ -90,27 +90,18 @@ fn view_models_reflect_resources() {
     assert_eq!(grain.di_bp, 120);
 
     let list = &vm.commodity_list;
-    assert!(list.rows.len() >= 2);
-    let selected_index = list.selected.expect("selected index");
-    let selected_row = &list.rows[selected_index];
-    assert_eq!(selected_row.commodity, CommodityId(1));
+    assert_eq!(list.selected, Some(0));
+    assert_eq!(list.rows.len(), 2);
+    let first_row = &list.rows[0];
+    assert_eq!(first_row.commodity, CommodityId(1));
+    assert!(first_row.can_buy);
+    assert!(first_row.can_sell);
+    assert!(first_row.max_buy >= 1);
+    assert_eq!(first_row.held_units, 4);
 
-    let grain_row = list
-        .rows
-        .iter()
-        .find(|row| row.commodity == CommodityId(1))
-        .expect("grain row present");
-    assert!(grain_row.can_buy);
-    assert!(grain_row.can_sell);
-    assert!(grain_row.max_buy >= 1);
-    assert_eq!(grain_row.held_units, 4);
-
-    let textiles_row = list
-        .rows
-        .iter()
-        .find(|row| row.commodity == CommodityId(2))
-        .expect("textiles row present");
-    assert!(textiles_row.can_sell);
+    let second_row = &list.rows[1];
+    assert_eq!(second_row.commodity, CommodityId(2));
+    assert!(second_row.can_sell);
 
     assert_eq!(vm.cargo_panel.capacity_total, 120);
     assert_eq!(vm.wallet_panel.balance, MoneyCents(25_000));

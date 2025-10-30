@@ -4,7 +4,7 @@ use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::systems::economy::{CommodityId, MoneyCents};
+use crate::systems::economy::CommodityId;
 
 /// Canonical metadata describing a tradable commodity.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -13,9 +13,6 @@ pub struct CommoditySpec {
     pub id: CommodityId,
     pub slug: String,
     pub display_name: String,
-    pub base_price_cents: i64,
-    pub mass_per_unit_kg: u32,
-    pub volume_per_unit_l: u32,
 }
 
 impl CommoditySpec {
@@ -32,21 +29,6 @@ impl CommoditySpec {
     /// Display name suitable for UI surfaces.
     pub fn display_name(&self) -> &str {
         &self.display_name
-    }
-
-    /// Base price (in cents) used as the anchor for quote calculations.
-    pub fn base_price(&self) -> MoneyCents {
-        MoneyCents(self.base_price_cents)
-    }
-
-    /// Per-unit mass measured in kilograms.
-    pub fn mass_per_unit_kg(&self) -> u32 {
-        self.mass_per_unit_kg
-    }
-
-    /// Per-unit volume measured in litres.
-    pub fn volume_per_unit_l(&self) -> u32 {
-        self.volume_per_unit_l
     }
 }
 

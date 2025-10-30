@@ -81,10 +81,6 @@ pub struct HubTradeCatalog {
 }
 
 impl HubTradeCatalog {
-    pub fn clear(&mut self) {
-        self.entries.clear();
-    }
-
     pub fn insert(
         &mut self,
         commodity: CommodityId,
@@ -104,18 +100,6 @@ impl HubTradeCatalog {
 
     pub fn get(&self, commodity: CommodityId) -> Option<&CommodityMarketMetadata> {
         self.entries.get(&commodity)
-    }
-
-    pub fn rebuild_from_specs(&mut self, specs: &Commodities) {
-        self.clear();
-        for spec in specs.iter() {
-            self.insert(
-                spec.id(),
-                spec.base_price(),
-                spec.volume_per_unit_l(),
-                spec.mass_per_unit_kg(),
-            );
-        }
     }
 }
 
