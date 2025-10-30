@@ -6,7 +6,7 @@ use crate::scheduling::sets;
 use crate::systems::app_state::AppStatePlugin;
 use crate::systems::economy::{load_rulepack, EconState, Rulepack};
 use crate::systems::trading::inventory::Cargo;
-use crate::ui::hub_trade::HubTradeUiPlugin;
+use crate::ui::hub_trade::{HubTradeCatalog, HubTradeUiPlugin};
 use crate::ui::route_planner::RoutePlannerUiPlugin;
 use crate::world::WorldIndex;
 
@@ -83,12 +83,14 @@ impl Plugin for TradingPlugin {
     fn build(&self, app: &mut App) {
         initialise_resources(app);
         app.init_resource::<TradingViewState>()
+            .init_resource::<HubTradeCatalog>()
             .add_message::<EnterTradingViewEvent>()
             .add_message::<EnterRoutePlannerViewEvent>()
             .add_systems(
                 FixedUpdate,
                 apply_trading_view_events.in_set(sets::DETTEROT_Input),
             )
+            .add_systems(Startup, seed_hub_trade_catalog)
             .add_plugins(HubTradeUiPlugin)
             .add_plugins(RoutePlannerUiPlugin)
             .add_plugins(AppStatePlugin);
@@ -144,6 +146,13 @@ fn initialise_resources(app: &mut App) {
     if !world.contains_resource::<Cargo>() {
         world.insert_resource(Cargo::default());
     }
+}
+
+fn seed_hub_trade_catalog(
+    mut catalog: ResMut<HubTradeCatalog>,
+    commodities: Res<types::Commodities>,
+) {
+    catalog.rebuild_from_specs(&commodities);
 }
 
 fn apply_trading_view_events(
