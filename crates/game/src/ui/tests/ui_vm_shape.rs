@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use bevy::prelude::*;
 
 use crate::scheduling;
-use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Pp, Rulepack};
+use crate::systems::economy::{
+    BasisBp, CommodityId, EconState, EconomyDay, HubId, MoneyCents, Pp, Rulepack,
+};
 use crate::systems::trading::inventory::Cargo;
 use crate::systems::trading::types::{
     clear_global_commodities, global_commodities_guard, load_commodities, set_global_commodities,
@@ -50,6 +52,8 @@ fn view_models_reflect_resources() {
         pp: Pp(6200),
         ..Default::default()
     };
+    let expected_day = econ.day;
+    let expected_clamp = econ.last_clamp_hit;
     econ.di_bp.insert(CommodityId(1), BasisBp(120));
     econ.di_bp.insert(CommodityId(2), BasisBp(-45));
     econ.basis_bp
@@ -85,6 +89,8 @@ fn view_models_reflect_resources() {
 
     let vm = app.world().resource::<HubTradeViewModel>().clone();
 
+    assert_eq!(vm.day, expected_day);
+    assert_eq!(vm.di_clamp_hit, expected_clamp);
     assert!(!vm.di_ticker.entries.is_empty());
     let grain = vm
         .di_ticker
@@ -133,6 +139,73 @@ fn view_models_reflect_resources() {
         .find(|chip| chip.label == "PP")
         .unwrap();
     assert_eq!(pp_chip.value, "6200");
+
+    clear_global_commodities();
+}
+
+#[test]
+fn di_ticker_day_and_clamp_flags_update() {
+    let _guard = global_commodities_guard();
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    scheduling::configure(&mut app);
+    app.add_plugins(HubTradeUiPlugin);
+
+    let mut econ = EconState {
+        day: EconomyDay(3),
+        ..Default::default()
+    };
+    econ.di_bp.insert(CommodityId(1), BasisBp(10));
+    app.insert_resource(econ);
+
+    app.insert_resource(load_rulepack());
+    let specs = load_specs();
+    set_global_commodities(specs.clone());
+    app.insert_resource(specs.clone());
+
+    let mut catalog = HubTradeCatalog::default();
+    catalog.rebuild_from_specs(&specs);
+    app.insert_resource(catalog);
+
+    app.insert_resource(Cargo::default());
+    app.insert_resource(ActiveHub(HubId(1)));
+    app.insert_resource(SelectedCommodity(Some(CommodityId(1))));
+    app.insert_resource(WalletBalance(MoneyCents(0)));
+
+    app.update();
+    app.world_mut().run_schedule(FixedUpdate);
+
+    {
+        let vm = app.world().resource::<HubTradeViewModel>();
+        assert_eq!(vm.day, EconomyDay(3));
+        assert!(!vm.di_clamp_hit);
+    }
+
+    {
+        let mut econ = app.world_mut().resource_mut::<EconState>();
+        econ.day = EconomyDay(4);
+        econ.last_clamp_hit = true;
+    }
+    app.world_mut().run_schedule(FixedUpdate);
+
+    {
+        let vm = app.world().resource::<HubTradeViewModel>();
+        assert_eq!(vm.day, EconomyDay(4));
+        assert!(vm.di_clamp_hit);
+    }
+
+    {
+        let mut econ = app.world_mut().resource_mut::<EconState>();
+        econ.day = EconomyDay(5);
+        econ.last_clamp_hit = false;
+    }
+    app.world_mut().run_schedule(FixedUpdate);
+
+    {
+        let vm = app.world().resource::<HubTradeViewModel>();
+        assert_eq!(vm.day, EconomyDay(5));
+        assert!(!vm.di_clamp_hit);
+    }
 
     clear_global_commodities();
 }

@@ -62,6 +62,8 @@ pub struct SaveV1_1 {
     pub last_hub: Option<HubId>,
     #[serde(default)]
     pub cargo: CargoSave,
+    #[serde(default)]
+    pub last_clamp_hit: bool,
 }
 
 impl From<legacy::SaveV1> for SaveV1_1 {
@@ -83,6 +85,7 @@ impl From<legacy::SaveV1> for SaveV1_1 {
             rng_cursors: value.rng_cursors,
             last_hub: None,
             cargo: CargoSave::default(),
+            last_clamp_hit: false,
         }
     }
 }
@@ -112,6 +115,7 @@ impl Default for SaveV1_1 {
             rng_cursors: Vec::new(),
             last_hub: None,
             cargo: CargoSave::default(),
+            last_clamp_hit: false,
         }
     }
 }

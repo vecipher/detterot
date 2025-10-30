@@ -71,6 +71,7 @@ fn sample_save() -> SaveV1_1 {
                 },
             ],
         },
+        last_clamp_hit: false,
     }
 }
 
