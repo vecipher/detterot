@@ -5,12 +5,12 @@ use bevy::prelude::*;
 use game::app_state::AppState;
 use game::systems::command_queue::CommandQueue;
 use game::systems::economy::rulepack::load_rulepack;
-use game::systems::economy::{HubId, MoneyCents, Rulepack};
+use game::systems::economy::{CommodityId, HubId, MoneyCents, Rulepack};
 use game::systems::trading::engine::TradeKind;
 use game::systems::trading::inventory::Cargo;
 use game::systems::trading::types::{CommodityCatalog, TradingConfig};
 use game::ui::hub_trade::{
-    build_view, HubTradePlugin, HubTradeUiModel, HubTradeUiState, StepperButton, TradeButton,
+    HubTradePlugin, HubTradeUiModel, HubTradeUiState, StepperButton, TradeButton,
 };
 use repro::CommandKind;
 
@@ -31,6 +31,50 @@ fn load_rulepack_fixture() -> Rulepack {
     load_rulepack(path.to_str().expect("utf-8 path")).expect("rulepack")
 }
 
+fn warm_up_hub_trade_ui(app: &mut App) {
+    for _ in 0..10 {
+        app.update();
+        let view_ready = {
+            let model = app.world().resource::<HubTradeUiModel>();
+            model.view().is_some()
+        };
+        if !view_ready {
+            continue;
+        }
+
+        app.update();
+
+        let stepper_ready = {
+            let world = app.world_mut();
+            let mut query = world.query::<&StepperButton>();
+            query.iter(&*world).next().is_some()
+        };
+
+        if stepper_ready {
+            return;
+        }
+    }
+    panic!("hub trade view never became available");
+}
+
+fn collect_stepper_buttons(app: &mut App) -> Vec<(Entity, CommodityId, i32)> {
+    let world = app.world_mut();
+    let mut query = world.query::<(Entity, &StepperButton)>();
+    query
+        .iter(&*world)
+        .map(|(entity, button)| (entity, button.commodity(), button.delta()))
+        .collect()
+}
+
+fn collect_trade_buttons(app: &mut App) -> Vec<(Entity, CommodityId, TradeKind)> {
+    let world = app.world_mut();
+    let mut query = world.query::<(Entity, &TradeButton)>();
+    query
+        .iter(&*world)
+        .map(|(entity, button)| (entity, button.commodity(), button.kind()))
+        .collect()
+}
+
 #[test]
 fn stepper_buttons_update_units_and_meter_queue() {
     install_globals();
@@ -47,14 +91,6 @@ fn stepper_buttons_update_units_and_meter_queue() {
         ..Default::default()
     };
 
-    let view = build_view(
-        HubId(1),
-        &app_state.econ,
-        &rp,
-        &app_state.cargo,
-        app_state.wallet,
-    );
-
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     app.add_plugins(HubTradePlugin);
@@ -65,11 +101,7 @@ fn stepper_buttons_update_units_and_meter_queue() {
         let mut queue = app.world_mut().resource_mut::<CommandQueue>();
         queue.begin_tick(0);
     }
-    {
-        let mut model = app.world_mut().resource_mut::<HubTradeUiModel>();
-        model.set_view(view);
-    }
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
     let target_commodity = {
         let model = app.world().resource::<HubTradeUiModel>();
@@ -80,19 +112,24 @@ fn stepper_buttons_update_units_and_meter_queue() {
             .id
     };
 
-    let plus_entity = {
-        let world = app.world_mut();
-        let mut query = world.query::<(Entity, &StepperButton)>();
-        query
-            .iter(&*world)
-            .find(|(_, button)| button.commodity() == target_commodity && button.delta() > 0)
-            .map(|(entity, _)| entity)
-            .expect("plus button")
-    };
+    let steppers = collect_stepper_buttons(&mut app);
+    assert!(
+        steppers
+            .iter()
+            .any(|(_, commodity, delta)| *commodity == target_commodity && *delta > 0),
+        "available steppers: {:?}",
+        steppers
+    );
+
+    let plus_entity = steppers
+        .iter()
+        .find(|(_, commodity, delta)| *commodity == target_commodity && *delta > 0)
+        .map(|(entity, _, _)| *entity)
+        .expect("plus button");
     app.world_mut()
         .entity_mut(plus_entity)
         .insert(Interaction::Pressed);
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
     let units = {
         let model = app.world().resource::<HubTradeUiModel>();
@@ -126,14 +163,6 @@ fn trade_buttons_execute_actions_and_refresh_view() {
         ..Default::default()
     };
 
-    let view = build_view(
-        HubId(1),
-        &app_state.econ,
-        &rp,
-        &app_state.cargo,
-        app_state.wallet,
-    );
-
     let mut app = App::new();
     app.add_plugins(MinimalPlugins);
     app.add_plugins(HubTradePlugin);
@@ -144,11 +173,7 @@ fn trade_buttons_execute_actions_and_refresh_view() {
         let mut queue = app.world_mut().resource_mut::<CommandQueue>();
         queue.begin_tick(0);
     }
-    {
-        let mut model = app.world_mut().resource_mut::<HubTradeUiModel>();
-        model.set_view(view);
-    }
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
     let target_commodity = {
         let model = app.world().resource::<HubTradeUiModel>();
@@ -159,56 +184,48 @@ fn trade_buttons_execute_actions_and_refresh_view() {
             .id
     };
 
-    let plus_entity = {
-        let world = app.world_mut();
-        let mut query = world.query::<(Entity, &StepperButton)>();
-        query
-            .iter(&*world)
-            .find(|(_, button)| button.commodity() == target_commodity && button.delta() > 0)
-            .map(|(entity, _)| entity)
-            .expect("plus button")
-    };
+    let steppers = collect_stepper_buttons(&mut app);
+    let plus_entity = steppers
+        .iter()
+        .find(|(_, commodity, delta)| *commodity == target_commodity && *delta > 0)
+        .map(|(entity, _, _)| *entity)
+        .expect("plus button");
     app.world_mut()
         .entity_mut(plus_entity)
         .insert(Interaction::Pressed);
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
-    let buy_entity = {
-        let world = app.world_mut();
-        let mut query = world.query::<(Entity, &TradeButton)>();
-        query
-            .iter(&*world)
-            .find(|(_, button)| {
-                button.commodity() == target_commodity && matches!(button.kind(), TradeKind::Buy)
-            })
-            .map(|(entity, _)| entity)
-            .expect("buy button")
-    };
+    let trade_buttons = collect_trade_buttons(&mut app);
+    let buy_entity = trade_buttons
+        .iter()
+        .find(|(_, commodity, kind)| {
+            *commodity == target_commodity && matches!(kind, TradeKind::Buy)
+        })
+        .map(|(entity, _, _)| *entity)
+        .expect("buy button");
     app.world_mut()
         .entity_mut(buy_entity)
         .insert(Interaction::Pressed);
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
     {
         let mut queue = app.world_mut().resource_mut::<CommandQueue>();
         queue.begin_tick(1);
     }
 
-    let sell_entity = {
-        let world = app.world_mut();
-        let mut query = world.query::<(Entity, &TradeButton)>();
-        query
-            .iter(&*world)
-            .find(|(_, button)| {
-                button.commodity() == target_commodity && matches!(button.kind(), TradeKind::Sell)
-            })
-            .map(|(entity, _)| entity)
-            .expect("sell button")
-    };
+    let trade_buttons = collect_trade_buttons(&mut app);
+
+    let sell_entity = trade_buttons
+        .iter()
+        .find(|(_, commodity, kind)| {
+            *commodity == target_commodity && matches!(kind, TradeKind::Sell)
+        })
+        .map(|(entity, _, _)| *entity)
+        .expect("sell button");
     app.world_mut()
         .entity_mut(sell_entity)
         .insert(Interaction::Pressed);
-    app.update();
+    warm_up_hub_trade_ui(&mut app);
 
     let (wallet_after, cargo_units) = {
         let state = app.world().resource::<AppState>();

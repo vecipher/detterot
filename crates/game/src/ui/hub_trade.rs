@@ -55,6 +55,7 @@ impl Plugin for HubTradePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HubTradeUiState>()
             .init_resource::<HubTradeUiModel>()
+            .add_systems(Update, refresh_hub_trade_view)
             .add_systems(Startup, setup_hub_trade_ui)
             .add_systems(Update, apply_hub_trade_view)
             .add_systems(Update, handle_stepper_buttons)
@@ -97,7 +98,7 @@ impl HubTradeUiModel {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommodityRow {
     pub id: CommodityId,
     pub name: String,
@@ -107,20 +108,20 @@ pub struct CommodityRow {
     pub drivers: TradingDrivers,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoItemRow {
     pub commodity: CommodityId,
     pub units: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoSummary {
     pub capacity_mass_kg: u32,
     pub capacity_volume_l: u32,
     pub items: Vec<CargoItemRow>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HubTradeView {
     pub hub: HubId,
     pub day: EconomyDay,
@@ -368,6 +369,35 @@ fn setup_hub_trade_ui(mut commands: Commands) {
         });
 }
 
+fn refresh_hub_trade_view(
+    app_state: Res<AppState>,
+    rp: Res<Rulepack>,
+    mut model: ResMut<HubTradeUiModel>,
+) {
+    if !app_state.is_changed() && model.view().is_some() {
+        return;
+    }
+
+    let hub = app_state.last_hub;
+    let view = build_view(
+        hub,
+        &app_state.econ,
+        rp.as_ref(),
+        &app_state.cargo,
+        app_state.wallet,
+    );
+
+    if model
+        .view()
+        .map(|existing| existing == &view)
+        .unwrap_or(false)
+    {
+        return;
+    }
+
+    model.set_view(view);
+}
+
 fn apply_hub_trade_view(
     mut commands: Commands,
     mut model: ResMut<HubTradeUiModel>,
@@ -377,6 +407,10 @@ fn apply_hub_trade_view(
     existing_rows: Query<Entity, With<CommodityRowUi>>,
     children_query: Query<&Children>,
 ) {
+    let Some(table_entity) = table_query.iter().next() else {
+        return;
+    };
+
     if !model.take_dirty() {
         return;
     }
@@ -399,10 +433,6 @@ fn apply_hub_trade_view(
     for entity in existing_rows.iter() {
         despawn_recursive(&mut commands, entity, &children_query);
     }
-
-    let Some(table_entity) = table_query.iter().next() else {
-        return;
-    };
 
     let units_snapshot = model.stepper_units.clone();
     commands.entity(table_entity).with_children(|table| {
