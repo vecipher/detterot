@@ -13,9 +13,7 @@ use game::systems::save::{
 use game::systems::trading::inventory::Cargo;
 use game::systems::trading::types::load_commodities;
 use game::systems::trading::{EnterRoutePlannerViewEvent, TradingPlugin};
-use game::ui::hub_trade::{
-    ActiveHub, BuyUnitsEvent, HubTradeCatalog, SellUnitsEvent, WalletBalance,
-};
+use game::ui::hub_trade::{ActiveHub, BuyUnitsEvent, SellUnitsEvent, WalletBalance};
 
 fn asset_path(relative: &str) -> String {
     let direct = PathBuf::from(relative);
@@ -83,11 +81,6 @@ fn trade_save_load_roundtrip() {
         econ.di_bp.insert(CommodityId(1), BasisBp(0));
         econ.basis_bp.insert((HubId(1), CommodityId(1)), BasisBp(0));
     }
-    {
-        let mut catalog = app.world_mut().resource_mut::<HubTradeCatalog>();
-        catalog.insert(CommodityId(1), MoneyCents(250), 4, 2);
-    }
-
     app.update();
 
     {
@@ -173,11 +166,6 @@ fn trade_save_load_roundtrip() {
         econ.di_bp.insert(CommodityId(1), BasisBp(0));
         econ.basis_bp.insert((HubId(1), CommodityId(1)), BasisBp(0));
     }
-    {
-        let mut catalog = app.world_mut().resource_mut::<HubTradeCatalog>();
-        catalog.insert(CommodityId(1), MoneyCents(250), 4, 2);
-    }
-
     app.update();
 
     {

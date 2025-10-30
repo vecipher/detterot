@@ -2,43 +2,70 @@
 id = 1
 slug = "grain"
 display_name = "Grain"
+base_price_cents = 250
+mass_per_unit_kg = 2
+volume_per_unit_l = 4
 
 [[commodity]]
 id = 2
 slug = "textiles"
 display_name = "Textiles"
+base_price_cents = 400
+mass_per_unit_kg = 1
+volume_per_unit_l = 1
 
 [[commodity]]
 id = 3
 slug = "lumber"
 display_name = "Lumber"
+base_price_cents = 320
+mass_per_unit_kg = 3
+volume_per_unit_l = 5
 
 [[commodity]]
 id = 4
 slug = "metals"
 display_name = "Metals"
+base_price_cents = 500
+mass_per_unit_kg = 5
+volume_per_unit_l = 2
 
 [[commodity]]
 id = 5
 slug = "electronics"
 display_name = "Electronics"
+base_price_cents = 650
+mass_per_unit_kg = 1
+volume_per_unit_l = 1
 
 [[commodity]]
 id = 6
 slug = "chemicals"
 display_name = "Chemicals"
+base_price_cents = 420
+mass_per_unit_kg = 2
+volume_per_unit_l = 2
 
 [[commodity]]
 id = 7
 slug = "pharmaceuticals"
 display_name = "Pharmaceuticals"
+base_price_cents = 900
+mass_per_unit_kg = 1
+volume_per_unit_l = 1
 
 [[commodity]]
 id = 8
 slug = "luxury_goods"
 display_name = "Luxury Goods"
+base_price_cents = 1200
+mass_per_unit_kg = 1
+volume_per_unit_l = 1
 
 [[commodity]]
 id = 9
 slug = "energy_cells"
 display_name = "Energy Cells"
+base_price_cents = 280
+mass_per_unit_kg = 1
+volume_per_unit_l = 3

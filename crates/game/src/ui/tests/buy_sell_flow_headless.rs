@@ -47,10 +47,11 @@ fn buying_and_selling_updates_inventory_and_wallet() {
     econ.basis_bp.insert((HubId(1), CommodityId(1)), BasisBp(0));
     app.insert_resource(econ);
     app.insert_resource(load_rulepack());
-    app.insert_resource(load_commodities(&load_specs_path()).unwrap());
+    let specs = load_commodities(&load_specs_path()).unwrap();
+    app.insert_resource(specs.clone());
 
     let mut catalog = HubTradeCatalog::default();
-    catalog.insert(CommodityId(1), MoneyCents(250), 4, 2);
+    catalog.rebuild_from_specs(&specs);
     app.insert_resource(catalog);
 
     let mut cargo = Cargo::default();
