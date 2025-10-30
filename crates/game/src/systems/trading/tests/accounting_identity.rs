@@ -1,8 +1,7 @@
 use crate::systems::command_queue::CommandQueue;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
-use crate::systems::trading::{
-    execute_trade, inventory::Cargo, meters, pricing_vm::price_view, TradeKind, TradeTx,
-};
+use crate::systems::trading::types::CommoditySpec;
+use crate::systems::trading::{execute_trade, inventory::Cargo, meters, types, TradeKind, TradeTx};
 
 use repro::Command;
 
@@ -16,13 +15,32 @@ fn setup_view(commodity: CommodityId, hub: HubId) -> (EconState, Rulepack) {
     (state, pack)
 }
 
+fn register_metadata(
+    commodity: CommodityId,
+    base_price: MoneyCents,
+    volume_per_unit: u32,
+    mass_per_unit: u32,
+) {
+    types::clear_global_commodities();
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: format!("test-{0}", commodity.0),
+        display_name: "Test".to_string(),
+        base_price_cents: base_price.as_i64(),
+        mass_per_unit_kg: mass_per_unit,
+        volume_per_unit_l: volume_per_unit,
+    };
+    let catalog = types::commodities_from_specs(vec![spec]);
+    types::set_global_commodities(catalog);
+}
+
 #[test]
 fn buy_trade_preserves_accounting_identity() {
+    let _guard = types::global_commodities_guard();
     let commodity = CommodityId(3);
     let hub = HubId(2);
+    register_metadata(commodity, MoneyCents(250), 2, 3);
     let (state, rulepack) = setup_view(commodity, hub);
-    let view = price_view(hub, commodity, &state, &rulepack)
-        .with_price(MoneyCents(250), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 20;
@@ -34,23 +52,21 @@ fn buy_trade_preserves_accounting_identity() {
         hub,
         commodity,
         units: 4,
-        base_price: MoneyCents(250),
-        volume_per_unit: 2,
-        mass_per_unit: 3,
     };
 
     let wallet_before = wallet;
     let mut queue = CommandQueue::default();
     queue.begin_tick(0);
-    let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
+    let result = execute_trade(&tx, &state, &mut cargo, &mut wallet, &rulepack).expect("trade");
 
     assert_eq!(result.units_executed, 4);
     let expected_fee = MoneyCents::from_i128_clamped(
-        i128::from(result.gross.as_i64()) * i128::from(rulepack.trading.transaction_fee_bp)
+        i128::from(result.subtotal.as_i64()) * i128::from(rulepack.trading.transaction_fee_bp)
             / 10_000,
     );
     assert_eq!(result.fee, expected_fee);
-    let total_cost = result.gross.saturating_add(result.fee);
+    let total_cost = result.subtotal.saturating_add(result.fee);
+    assert_eq!(result.total_cents, total_cost);
     let expected_delta = MoneyCents::from_i128_clamped(-i128::from(total_cost.as_i64()));
     assert_eq!(result.wallet_delta, expected_delta);
     assert_eq!(wallet_before.saturating_add(result.wallet_delta), wallet);
@@ -76,11 +92,11 @@ fn buy_trade_preserves_accounting_identity() {
 
 #[test]
 fn sell_trade_preserves_accounting_identity() {
+    let _guard = types::global_commodities_guard();
     let commodity = CommodityId(4);
     let hub = HubId(1);
+    register_metadata(commodity, MoneyCents(250), 2, 3);
     let (state, rulepack) = setup_view(commodity, hub);
-    let view = price_view(hub, commodity, &state, &rulepack)
-        .with_price(MoneyCents(250), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 30;
@@ -95,23 +111,23 @@ fn sell_trade_preserves_accounting_identity() {
         hub,
         commodity,
         units: 5,
-        base_price: MoneyCents(250),
-        volume_per_unit: 2,
-        mass_per_unit: 3,
     };
 
     let wallet_before = wallet;
     let mut queue = CommandQueue::default();
     queue.begin_tick(0);
-    let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
+    let result = execute_trade(&tx, &state, &mut cargo, &mut wallet, &rulepack).expect("trade");
 
     assert_eq!(result.units_executed, 5);
     let expected_fee = MoneyCents::from_i128_clamped(
-        i128::from(result.gross.as_i64()) * i128::from(rulepack.trading.transaction_fee_bp)
+        i128::from(result.subtotal.as_i64()) * i128::from(rulepack.trading.transaction_fee_bp)
             / 10_000,
     );
     assert_eq!(result.fee, expected_fee);
-    let expected_delta = result.gross.saturating_sub(result.fee);
+    let proceeds = result.subtotal.saturating_sub(result.fee);
+    let expected_total = MoneyCents::from_i128_clamped(-i128::from(proceeds.as_i64()));
+    assert_eq!(result.total_cents, expected_total);
+    let expected_delta = result.subtotal.saturating_sub(result.fee);
     assert_eq!(result.wallet_delta, expected_delta);
     assert_eq!(wallet_before.saturating_add(result.wallet_delta), wallet);
 

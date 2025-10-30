@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use crate::scheduling::sets;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::inventory::Cargo;
-use crate::systems::trading::types::{Commodities, CommoditySpec};
+use crate::systems::trading::types::{self, Commodities, CommoditySpec};
 use crate::systems::trading::{
     execute_trade, price_view, trading_drivers, TradeKind, TradeTx, TradingViewState,
 };
@@ -29,6 +29,7 @@ impl Plugin for HubTradeUiPlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    sync_global_commodities,
                     drive_buy_units,
                     drive_sell_units,
                     update_di_ticker,
@@ -369,6 +370,17 @@ fn update_cargo_wallet_panels(
     }
 }
 
+fn sync_global_commodities(commodities: Option<Res<Commodities>>) {
+    let Some(commodities) = commodities else {
+        return;
+    };
+
+    if commodities.is_added() || commodities.is_changed() {
+        let snapshot = commodities.as_ref().clone();
+        types::set_global_commodities(snapshot);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn update_commodity_list(
     econ: Res<EconState>,
@@ -400,8 +412,10 @@ fn update_commodity_list(
             continue;
         };
 
-        let view = price_view(hub.0, spec.id(), &econ, &rulepack)
-            .with_price(meta.base_price, &rulepack.pricing);
+        let Ok(view) = price_view(hub.0, spec.id(), &econ, &rulepack) else {
+            warn!("failed to build price view for {:?}", spec.id());
+            continue;
+        };
         let di_bp = view.di_bp().0;
         let basis_bp = view.basis_bp().0;
         let unit_price = view.price_cents();
@@ -453,17 +467,24 @@ fn update_unit_steppers(
 ) {
     if let Some(commodity) = selected.0 {
         if let Some(meta) = catalog.get(commodity) {
-            let view = price_view(hub.0, commodity, &econ, &rulepack)
-                .with_price(meta.base_price, &rulepack.pricing);
-            let unit_price = view.price_cents();
-            steppers.max_buy = compute_max_buy_units(
-                &cargo,
-                meta,
-                wallet.0,
-                unit_price,
-                rulepack.trading.transaction_fee_bp,
-            );
-            steppers.max_sell = cargo.units(commodity);
+            match price_view(hub.0, commodity, &econ, &rulepack) {
+                Ok(view) => {
+                    let unit_price = view.price_cents();
+                    steppers.max_buy = compute_max_buy_units(
+                        &cargo,
+                        meta,
+                        wallet.0,
+                        unit_price,
+                        rulepack.trading.transaction_fee_bp,
+                    );
+                    steppers.max_sell = cargo.units(commodity);
+                }
+                Err(err) => {
+                    warn!("failed to build price view for {:?}: {err}", commodity);
+                    steppers.max_buy = 0;
+                    steppers.max_sell = cargo.units(commodity);
+                }
+            }
         } else {
             steppers.max_buy = 0;
             steppers.max_sell = 0;
@@ -504,26 +525,21 @@ fn drive_buy_units(
         if event.units == 0 {
             continue;
         }
-        let Some(meta) = catalog.get(event.commodity) else {
+        if catalog.get(event.commodity).is_none() {
             continue;
-        };
+        }
         let requested = event.units;
         if requested == 0 {
             continue;
         }
-        let view = price_view(hub.0, event.commodity, &econ, &rulepack)
-            .with_price(meta.base_price, &rulepack.pricing);
         let tx = TradeTx {
             kind: TradeKind::Buy,
             hub: hub.0,
             commodity: event.commodity,
             units: requested,
-            base_price: meta.base_price,
-            volume_per_unit: meta.volume_per_unit,
-            mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &view, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(&tx, &econ, cargo.as_mut(), &mut wallet_value, &rulepack) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_buy_units = result.units_executed;
@@ -555,26 +571,21 @@ fn drive_sell_units(
         if event.units == 0 {
             continue;
         }
-        let Some(meta) = catalog.get(event.commodity) else {
+        if catalog.get(event.commodity).is_none() {
             continue;
-        };
+        }
         let requested = event.units;
         if requested == 0 {
             continue;
         }
-        let view = price_view(hub.0, event.commodity, &econ, &rulepack)
-            .with_price(meta.base_price, &rulepack.pricing);
         let tx = TradeTx {
             kind: TradeKind::Sell,
             hub: hub.0,
             commodity: event.commodity,
             units: requested,
-            base_price: meta.base_price,
-            volume_per_unit: meta.volume_per_unit,
-            mass_per_unit: meta.mass_per_unit,
         };
         let mut wallet_value = wallet.0;
-        match execute_trade(&tx, &view, &rulepack, cargo.as_mut(), &mut wallet_value) {
+        match execute_trade(&tx, &econ, cargo.as_mut(), &mut wallet_value, &rulepack) {
             Ok(result) => {
                 wallet.0 = wallet_value;
                 steppers.last_sell_units = result.units_executed;

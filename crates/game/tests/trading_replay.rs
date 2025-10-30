@@ -5,9 +5,8 @@ use game::systems::command_queue::CommandQueue;
 use game::systems::economy::{
     load_rulepack, BasisBp, CommodityId, EconState, HubId, MoneyCents, Pp, Rulepack,
 };
-use game::systems::trading::{
-    execute_trade, inventory::Cargo, meters, pricing_vm::price_view, TradeKind, TradeTx,
-};
+use game::systems::trading::types::CommoditySpec;
+use game::systems::trading::{execute_trade, inventory::Cargo, meters, types, TradeKind, TradeTx};
 use repro::{Record, RecordMeta};
 
 #[test]
@@ -234,6 +233,7 @@ fn trading_seeds() -> Vec<TradingSeed> {
 }
 
 fn run_seed(seed: &TradingSeed, rulepack: &Rulepack) -> Record {
+    let _guard = types::global_commodities_guard();
     let mut state = EconState::default();
     state.di_bp.insert(seed.commodity, seed.di_bp);
     state
@@ -247,19 +247,21 @@ fn run_seed(seed: &TradingSeed, rulepack: &Rulepack) -> Record {
 
     for action in &seed.actions {
         queue.begin_tick(action.tick);
+        let base_price = action.base_price.unwrap_or(seed.base_price);
+        register_metadata(
+            seed.commodity,
+            base_price,
+            seed.volume_per_unit,
+            seed.mass_per_unit,
+        );
         let tx = TradeTx {
             kind: action.kind,
             hub: seed.hub,
             commodity: seed.commodity,
             units: action.units,
-            base_price: action.base_price.unwrap_or(seed.base_price),
-            volume_per_unit: seed.volume_per_unit,
-            mass_per_unit: seed.mass_per_unit,
         };
-        let view = price_view(seed.hub, seed.commodity, &state, rulepack)
-            .with_price(tx.base_price, &rulepack.pricing);
         let result =
-            execute_trade(&tx, &view, rulepack, &mut cargo, &mut wallet).expect("trade execution");
+            execute_trade(&tx, &state, &mut cargo, &mut wallet, rulepack).expect("trade execution");
         meters::record_trade(&mut queue, action.kind, &result);
     }
 
@@ -268,6 +270,24 @@ fn run_seed(seed: &TradingSeed, rulepack: &Rulepack) -> Record {
         commands: queue.drain(),
         inputs: Vec::new(),
     }
+}
+
+fn register_metadata(
+    commodity: CommodityId,
+    base_price: MoneyCents,
+    volume_per_unit: u32,
+    mass_per_unit: u32,
+) {
+    types::clear_global_commodities();
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: format!("seed-{0}", commodity.0),
+        display_name: "Seed".to_string(),
+        base_price_cents: base_price.as_i64(),
+        mass_per_unit_kg: mass_per_unit,
+        volume_per_unit_l: volume_per_unit,
+    };
+    types::set_global_commodities(types::commodities_from_specs(vec![spec]));
 }
 
 fn load_fixture_rulepack() -> Rulepack {

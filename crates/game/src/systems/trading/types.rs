@@ -1,4 +1,7 @@
-use std::fs;
+use std::{
+    fs,
+    sync::{Arc, Mutex, MutexGuard, OnceLock, RwLock},
+};
 
 use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
@@ -99,4 +102,45 @@ pub fn load_commodities(path: &str) -> Result<Commodities, CommodityLoadError> {
     let raw = fs::read_to_string(path)?;
     let commodities: Commodities = toml::from_str(&raw)?;
     Ok(commodities)
+}
+
+fn global_commodities_store() -> &'static RwLock<Option<Arc<Commodities>>> {
+    static STORE: OnceLock<RwLock<Option<Arc<Commodities>>>> = OnceLock::new();
+    STORE.get_or_init(|| RwLock::new(None))
+}
+
+fn global_commodities_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+/// Registers a cloneable snapshot of the commodity catalog for global access.
+pub fn set_global_commodities(data: Commodities) {
+    *global_commodities_store()
+        .write()
+        .expect("global commodities store poisoned") = Some(Arc::new(data));
+}
+
+/// Provides a clone of the specification for a commodity if one has been registered.
+pub fn commodity_spec(id: CommodityId) -> Option<CommoditySpec> {
+    let guard = global_commodities_store().read().ok()?;
+    let catalog = guard.as_ref()?;
+    catalog.get_by_id(id).cloned()
+}
+
+pub fn clear_global_commodities() {
+    *global_commodities_store()
+        .write()
+        .expect("global commodities store poisoned") = None;
+}
+
+pub fn commodities_from_specs(specs: Vec<CommoditySpec>) -> Commodities {
+    Commodities { entries: specs }
+}
+
+/// Acquires the global commodity catalog guard to serialize test access.
+pub fn global_commodities_guard() -> MutexGuard<'static, ()> {
+    global_commodities_lock()
+        .lock()
+        .expect("global commodities guard poisoned")
 }

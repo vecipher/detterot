@@ -108,15 +108,13 @@ mod tests {
             hub: crate::systems::economy::HubId(2),
             commodity: crate::systems::economy::CommodityId(1),
             units: 5,
-            base_price: MoneyCents(100),
-            volume_per_unit: 1,
-            mass_per_unit: 1,
         };
         let result = TradeResult {
             units_executed: 5,
             unit_price: MoneyCents(123),
-            gross: MoneyCents(615),
+            subtotal: MoneyCents(615),
             fee: MoneyCents(6),
+            total_cents: MoneyCents(621),
             wallet_delta: MoneyCents(-621),
         };
 

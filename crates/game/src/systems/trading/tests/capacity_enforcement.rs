@@ -1,7 +1,6 @@
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
-use crate::systems::trading::{
-    execute_trade, inventory::Cargo, pricing_vm::price_view, TradeKind, TradeTx,
-};
+use crate::systems::trading::types::CommoditySpec;
+use crate::systems::trading::{execute_trade, inventory::Cargo, types, TradeKind, TradeTx};
 
 use super::load_fixture_rulepack;
 
@@ -13,13 +12,31 @@ fn build_view(commodity: CommodityId, hub: HubId) -> (EconState, Rulepack) {
     (state, pack)
 }
 
+fn register_metadata(
+    commodity: CommodityId,
+    base_price: MoneyCents,
+    volume_per_unit: u32,
+    mass_per_unit: u32,
+) {
+    types::clear_global_commodities();
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: format!("test-{0}", commodity.0),
+        display_name: "Test".to_string(),
+        base_price_cents: base_price.as_i64(),
+        mass_per_unit_kg: mass_per_unit,
+        volume_per_unit_l: volume_per_unit,
+    };
+    types::set_global_commodities(types::commodities_from_specs(vec![spec]));
+}
+
 #[test]
 fn buy_trade_clamps_to_mass_and_volume() {
+    let _guard = types::global_commodities_guard();
     let commodity = CommodityId(5);
     let hub = HubId(2);
+    register_metadata(commodity, MoneyCents(120), 4, 6);
     let (state, rulepack) = build_view(commodity, hub);
-    let view = price_view(hub, commodity, &state, &rulepack)
-        .with_price(MoneyCents(120), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 9;
@@ -31,12 +48,9 @@ fn buy_trade_clamps_to_mass_and_volume() {
         hub,
         commodity,
         units: 10,
-        base_price: MoneyCents(120),
-        volume_per_unit: 4,
-        mass_per_unit: 6,
     };
 
-    let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
+    let result = execute_trade(&tx, &state, &mut cargo, &mut wallet, &rulepack).expect("trade");
     assert_eq!(result.units_executed, 1);
     assert_eq!(cargo.capacity_used, 4);
     assert_eq!(cargo.mass_capacity_used, 6);
@@ -44,11 +58,11 @@ fn buy_trade_clamps_to_mass_and_volume() {
 
 #[test]
 fn buy_trade_clamps_to_wallet_balance() {
+    let _guard = types::global_commodities_guard();
     let commodity = CommodityId(6);
     let hub = HubId(4);
+    register_metadata(commodity, MoneyCents(250), 1, 1);
     let (state, rulepack) = build_view(commodity, hub);
-    let view = price_view(hub, commodity, &state, &rulepack)
-        .with_price(MoneyCents(250), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 50;
@@ -60,12 +74,9 @@ fn buy_trade_clamps_to_wallet_balance() {
         hub,
         commodity,
         units: 10,
-        base_price: MoneyCents(250),
-        volume_per_unit: 1,
-        mass_per_unit: 1,
     };
 
-    let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
+    let result = execute_trade(&tx, &state, &mut cargo, &mut wallet, &rulepack).expect("trade");
     assert_eq!(result.units_executed, 2);
     assert_eq!(cargo.capacity_used, 2);
     assert_eq!(cargo.mass_capacity_used, 2);
@@ -75,11 +86,11 @@ fn buy_trade_clamps_to_wallet_balance() {
 
 #[test]
 fn sell_trade_cannot_exceed_inventory() {
+    let _guard = types::global_commodities_guard();
     let commodity = CommodityId(7);
     let hub = HubId(5);
+    register_metadata(commodity, MoneyCents(200), 3, 3);
     let (state, rulepack) = build_view(commodity, hub);
-    let view = price_view(hub, commodity, &state, &rulepack)
-        .with_price(MoneyCents(200), &rulepack.pricing);
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 30;
@@ -94,12 +105,9 @@ fn sell_trade_cannot_exceed_inventory() {
         hub,
         commodity,
         units: 7,
-        base_price: MoneyCents(200),
-        volume_per_unit: 3,
-        mass_per_unit: 3,
     };
 
-    let result = execute_trade(&tx, &view, &rulepack, &mut cargo, &mut wallet).expect("trade");
+    let result = execute_trade(&tx, &state, &mut cargo, &mut wallet, &rulepack).expect("trade");
     assert_eq!(result.units_executed, 3);
     assert_eq!(cargo.units(commodity), 0);
     assert_eq!(cargo.capacity_used, 0);

@@ -9,6 +9,7 @@ use crate::systems::economy::{
     BasisBp, CommodityId, EconState, HubId, MoneyCents,
 };
 use crate::systems::trading::pricing_vm::price_view;
+use crate::systems::trading::types::{self, CommoditySpec};
 
 fn unlimited_pricing_cfg() -> PricingCfg {
     PricingCfg {
@@ -81,6 +82,7 @@ fn stub_rulepack(pricing: PricingCfg) -> Rulepack {
 
 #[test]
 fn price_view_resolves_half_cent_ties_like_compute_price() {
+    let _guard = types::global_commodities_guard();
     let pricing = unlimited_pricing_cfg();
     let rulepack = stub_rulepack(pricing.clone());
     let commodity = CommodityId(1);
@@ -92,8 +94,17 @@ fn price_view_resolves_half_cent_ties_like_compute_price() {
         ..EconState::default()
     };
 
-    let view =
-        price_view(hub, commodity, &state, &rulepack).with_price(MoneyCents(5), &rulepack.pricing);
+    types::clear_global_commodities();
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: "test".to_string(),
+        display_name: "Test".to_string(),
+        base_price_cents: 5,
+        mass_per_unit_kg: 1,
+        volume_per_unit_l: 1,
+    };
+    types::set_global_commodities(types::commodities_from_specs(vec![spec]));
+    let view = price_view(hub, commodity, &state, &rulepack).expect("price view");
 
     let base = MoneyCents(5);
     let expected = compute_price(base, BasisBp(-500), BasisBp(-500), &rulepack.pricing);
@@ -101,8 +112,16 @@ fn price_view_resolves_half_cent_ties_like_compute_price() {
     assert_eq!(quoted, expected, "ties-to-even should match compute_price");
 
     state.di_bp.insert(commodity, BasisBp(-2_000));
-    let view =
-        price_view(hub, commodity, &state, &rulepack).with_price(MoneyCents(2), &rulepack.pricing);
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: "test".to_string(),
+        display_name: "Test".to_string(),
+        base_price_cents: 2,
+        mass_per_unit_kg: 1,
+        volume_per_unit_l: 1,
+    };
+    types::set_global_commodities(types::commodities_from_specs(vec![spec]));
+    let view = price_view(hub, commodity, &state, &rulepack).expect("price view");
     let base = MoneyCents(2);
     let expected = compute_price(base, BasisBp(-2_000), BasisBp(-500), &rulepack.pricing);
     let quoted = view.price_cents();
@@ -114,6 +133,7 @@ fn price_view_resolves_half_cent_ties_like_compute_price() {
 
 #[test]
 fn price_view_preserves_final_flooring() {
+    let _guard = types::global_commodities_guard();
     let pricing = unlimited_pricing_cfg();
     let rulepack = stub_rulepack(pricing.clone());
     let commodity = CommodityId(2);
@@ -126,7 +146,16 @@ fn price_view_preserves_final_flooring() {
     };
 
     let base = MoneyCents(1_234);
-    let view = price_view(hub, commodity, &state, &rulepack).with_price(base, &rulepack.pricing);
+    let spec = CommoditySpec {
+        id: commodity,
+        slug: "test".to_string(),
+        display_name: "Test".to_string(),
+        base_price_cents: base.as_i64(),
+        mass_per_unit_kg: 1,
+        volume_per_unit_l: 1,
+    };
+    types::set_global_commodities(types::commodities_from_specs(vec![spec]));
+    let view = price_view(hub, commodity, &state, &rulepack).expect("price view");
     let expected = compute_price(base, BasisBp(3_333), BasisBp(-444), &rulepack.pricing);
     let quoted = view.price_cents();
     assert_eq!(
