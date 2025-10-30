@@ -211,8 +211,16 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
     app.insert_resource(context);
     app.insert_resource(load_default_rulepack());
     app.add_plugins(TradingPlugin);
-    app.add_plugins(HubTradePlugin);
-    app.add_plugins(RoutePlannerPlugin);
+    if !options.headless {
+        if matches!(options.mode(), Mode::Play) {
+            app.add_plugins(bevy::asset::AssetPlugin::default());
+            app.add_plugins(bevy::text::TextPlugin);
+            app.add_plugins(bevy::ui::UiPlugin);
+            app.add_plugins((HubTradePlugin, RoutePlannerPlugin));
+        } else {
+            app.add_plugins(HubTradePlugin);
+        }
+    }
     app.add_plugins(DirectorPlugin);
     app
 }
