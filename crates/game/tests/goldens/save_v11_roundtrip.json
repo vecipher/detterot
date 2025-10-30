@@ -1,0 +1,62 @@
+{
+  "econ_version": 7,
+  "world_seed": 42,
+  "day": 3,
+  "last_hub": 2,
+  "di": [
+    {
+      "commodity": 1,
+      "value": 125
+    },
+    {
+      "commodity": 2,
+      "value": -45
+    }
+  ],
+  "di_overlay_bp": 120,
+  "basis": [
+    {
+      "hub": 1,
+      "commodity": 1,
+      "value": 15
+    },
+    {
+      "hub": 1,
+      "commodity": 2,
+      "value": -10
+    }
+  ],
+  "pp": 5100,
+  "rot": 12,
+  "debt_cents": 4200,
+  "inventory": [
+    {
+      "commodity": 9,
+      "amount": 33
+    }
+  ],
+  "wallet_cents": 37217,
+  "cargo": {
+    "capacity_mass_kg": 2000,
+    "capacity_volume_l": 1500,
+    "items": [
+      {
+        "commodity": 1,
+        "units": 7
+      }
+    ]
+  },
+  "pending_planting": [
+    {
+      "hub": 1,
+      "size": 4,
+      "age_days": 2
+    }
+  ],
+  "rng_cursors": [
+    {
+      "label": "di",
+      "draws": 24
+    }
+  ]
+}

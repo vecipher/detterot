@@ -1,0 +1,23 @@
+[[routes]]
+id = 1
+from = 1
+to = 2
+weather = "Clear"
+
+[[routes]]
+id = 2
+from = 2
+to = 3
+weather = "Fog"
+
+[[routes]]
+id = 3
+from = 3
+to = 1
+weather = "Windy"
+
+[[routes]]
+id = 4
+from = 2
+to = 4
+weather = "Rains"

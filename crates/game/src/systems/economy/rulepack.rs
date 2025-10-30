@@ -2,6 +2,7 @@
 
 use std::fs;
 
+use bevy::prelude::Resource;
 use blake3::Hasher;
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,7 @@ use thiserror::Error;
 /// pricing power, etc.) and stores values primarily expressed in basis points
 /// (bp) unless otherwise noted. Basis points are interpreted as 1/100th of a
 /// percent (10_000 bp = 100%).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 #[serde(deny_unknown_fields)]
 pub struct Rulepack {
     /// Day-index configuration expressed in basis points.

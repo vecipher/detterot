@@ -1,0 +1,55 @@
+{
+  "seed": 2,
+  "world_seed": 1342177282,
+  "hub": 1,
+  "day": 5,
+  "clamp_hit": 0,
+  "wallet_cents": 126505,
+  "cargo_units": [
+    [
+      1,
+      3
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      3
+    ]
+  ],
+  "di_bp": [
+    [
+      1,
+      140
+    ],
+    [
+      2,
+      -40
+    ],
+    [
+      3,
+      49
+    ]
+  ],
+  "basis_bp": [
+    [
+      1,
+      34
+    ],
+    [
+      2,
+      -32
+    ],
+    [
+      3,
+      -19
+    ]
+  ],
+  "buy_total_cents": 87785,
+  "sell_total_cents": -12290,
+  "fee_cents": 745,
+  "meter_buy": 7,
+  "meter_sell": 1
+}

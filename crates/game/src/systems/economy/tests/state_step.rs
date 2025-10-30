@@ -30,6 +30,7 @@ fn state_step_matches_golden() {
         di_bp: HashMap::from([(CommodityId(1), BasisBp(0)), (CommodityId(2), BasisBp(-50))]),
         di_overlay_bp: 120,
         basis_bp: HashMap::new(),
+        basis_drivers: HashMap::new(),
         pp: Pp(rp.pp.neutral_pp),
         rot_u16: 200,
         pending_planting: vec![PendingPlanting {
@@ -75,6 +76,7 @@ fn hub_only_scope_skips_global_progression() {
         di_bp: HashMap::from([(CommodityId(1), BasisBp(0)), (CommodityId(2), BasisBp(0))]),
         di_overlay_bp: 0,
         basis_bp: HashMap::new(),
+        basis_drivers: HashMap::new(),
         pp: Pp(rp.pp.neutral_pp),
         rot_u16: 0,
         pending_planting: Vec::new(),

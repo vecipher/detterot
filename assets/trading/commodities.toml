@@ -1,0 +1,5 @@
+list = [
+    { id = 1, name = "grain", mass_kg = 10, volume_l = 8 },
+    { id = 2, name = "ore", mass_kg = 25, volume_l = 15 },
+    { id = 3, name = "spice", mass_kg = 2, volume_l = 1 }
+]
