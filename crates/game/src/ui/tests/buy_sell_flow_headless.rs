@@ -5,7 +5,9 @@ use bevy::prelude::*;
 use crate::scheduling;
 use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::inventory::Cargo;
-use crate::systems::trading::types::load_commodities;
+use crate::systems::trading::types::{
+    clear_global_commodities, global_commodities_guard, load_commodities, set_global_commodities,
+};
 use crate::ui::hub_trade::{
     ActiveHub, BuyUnitsEvent, HubTradeCatalog, HubTradeUiPlugin, HubTradeViewModel,
     SelectedCommodity, SellUnitsEvent, WalletBalance,
@@ -47,7 +49,9 @@ fn buying_and_selling_updates_inventory_and_wallet() {
     econ.basis_bp.insert((HubId(1), CommodityId(1)), BasisBp(0));
     app.insert_resource(econ);
     app.insert_resource(load_rulepack());
+    let _guard = global_commodities_guard();
     let specs = load_commodities(&load_specs_path()).unwrap();
+    set_global_commodities(specs.clone());
     app.insert_resource(specs.clone());
 
     let mut catalog = HubTradeCatalog::default();
@@ -116,4 +120,6 @@ fn buying_and_selling_updates_inventory_and_wallet() {
         let vm = app.world().resource::<HubTradeViewModel>();
         assert_eq!(vm.sell_stepper.last_units, 2);
     }
+
+    clear_global_commodities();
 }
