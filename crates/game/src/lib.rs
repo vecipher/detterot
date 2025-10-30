@@ -26,7 +26,7 @@ use systems::command_queue::CommandQueue;
 #[cfg(feature = "deterministic")]
 use systems::director::director_cfg_path;
 use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
-use systems::economy::{Pp, RouteId, Weather};
+use systems::economy::{load_rulepack, Pp, RouteId, Rulepack, Weather};
 use systems::trading::TradingPlugin;
 use ui::hub_trade::HubTradePlugin;
 use ui::route_planner::RoutePlannerPlugin;
@@ -209,11 +209,35 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
     app.init_resource::<CommandQueue>();
     app.init_resource::<AppState>();
     app.insert_resource(context);
+    app.insert_resource(load_default_rulepack());
     app.add_plugins(TradingPlugin);
     app.add_plugins(HubTradePlugin);
     app.add_plugins(RoutePlannerPlugin);
     app.add_plugins(DirectorPlugin);
     app
+}
+
+fn load_default_rulepack() -> Rulepack {
+    let workspace_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("assets/rulepacks/day_001.toml");
+    let search_paths = [
+        std::path::Path::new("assets/rulepacks/day_001.toml"),
+        workspace_path.as_path(),
+    ];
+    for path in search_paths {
+        if path.exists() {
+            let as_str = path
+                .to_str()
+                .expect("default rulepack path should be valid UTF-8");
+            return load_rulepack(as_str).expect("failed to load default rulepack asset");
+        }
+    }
+    panic!(
+        "missing default rulepack asset at assets/rulepacks/day_001.toml (searched workspace path {})",
+        workspace_path.display()
+    );
 }
 
 /// Adds the core plugin groups for the simulation, taking the headless flag into account.
