@@ -1,29 +1,26 @@
-use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents};
+use crate::systems::economy::{BasisBp, CommodityId, EconState, HubId, MoneyCents, Rulepack};
 use crate::systems::trading::{
     execute_trade, inventory::Cargo, pricing_vm::price_view, TradeKind, TradeTx,
 };
 
 use super::load_fixture_rulepack;
 
-fn prepare_state(
-    commodity: CommodityId,
-    hub: HubId,
-) -> (EconState, crate::systems::economy::PricingCfg) {
+fn prepare_state(commodity: CommodityId, hub: HubId) -> (EconState, Rulepack) {
     let mut state = EconState::default();
     state.di_bp.insert(commodity, BasisBp(0));
     state.basis_bp.insert((hub, commodity), BasisBp(0));
     let pack = load_fixture_rulepack();
-    (state, pack.pricing)
+    (state, pack)
 }
 
 #[test]
 fn quoted_prices_remain_constant_within_a_day() {
     let commodity = CommodityId(2);
     let hub = HubId(6);
-    let (state, pricing) = prepare_state(commodity, hub);
-    let rulepack = load_fixture_rulepack();
-    let view = price_view(&state, &pricing);
-    let quoted = view.quote(hub, commodity, MoneyCents(250));
+    let (state, rulepack) = prepare_state(commodity, hub);
+    let view = price_view(hub, commodity, &state, &rulepack)
+        .with_price(MoneyCents(250), &rulepack.pricing);
+    let quoted = view.price_cents();
 
     let mut cargo = Cargo::default();
     cargo.capacity_total = 40;

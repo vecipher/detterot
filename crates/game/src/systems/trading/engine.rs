@@ -49,12 +49,12 @@ impl TradeResult {
 /// volume, and wallet constraints.
 pub fn execute_trade(
     tx: &TradeTx,
-    view: &PriceView<'_>,
+    view: &PriceView,
     rulepack: &Rulepack,
     cargo: &mut Cargo,
     wallet: &mut MoneyCents,
 ) -> Result<TradeResult> {
-    let unit_price = view.quote(tx.hub, tx.commodity, tx.base_price);
+    let unit_price = view.price_cents();
     if tx.units == 0 {
         return Ok(TradeResult::empty(unit_price));
     }
