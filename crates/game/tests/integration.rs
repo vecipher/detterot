@@ -4,6 +4,8 @@ mod buy_sell_flow_headless;
 mod danger_sign;
 #[path = "integration/director_config_strict.rs"]
 mod director_config_strict;
+#[path = "integration/hub_trade_ui.rs"]
+mod hub_trade_ui;
 #[path = "integration/migrate_roundtrip.rs"]
 mod migrate_roundtrip;
 #[path = "integration/migrate_v1_to_v11.rs"]
