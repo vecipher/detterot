@@ -212,8 +212,8 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
     app.add_plugins(TradingPlugin);
     if !options.headless {
         app.add_plugins(bevy::asset::AssetPlugin::default());
-        app.add_plugins(bevy::text::TextPlugin::default());
-        app.add_plugins(bevy::ui::UiPlugin::default());
+        app.add_plugins(bevy::text::TextPlugin);
+        app.add_plugins(bevy::ui::UiPlugin);
         app.add_plugins((HubTradePlugin, RoutePlannerPlugin));
     }
     app.add_plugins(DirectorPlugin);

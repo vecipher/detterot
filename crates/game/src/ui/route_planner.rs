@@ -277,7 +277,7 @@ fn collect_descendants(entity: Entity, hierarchy: &Query<&Children>, buffer: &mu
 fn load_font(asset_server: Option<&AssetServer>, path: &'static str) -> Handle<Font> {
     asset_server
         .map(|server| server.load(path))
-        .unwrap_or_else(Handle::default)
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
