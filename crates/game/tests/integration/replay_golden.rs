@@ -1,7 +1,9 @@
+#[path = "../support/repro.rs"]
+mod repro_support;
+
 use game::cli::{CliOptions, Mode};
-use repro::{from_canonical_json_bytes, hash_record, Record};
-use std::fs;
-use std::path::Path;
+use repro::Record;
+use repro_support::{assert_hash_matches, read_record, repo_path};
 
 const GOLDENS: [&str; 5] = [
     "repro/records/leg_seed_01.json",
@@ -13,16 +15,10 @@ const GOLDENS: [&str; 5] = [
 
 #[test]
 fn golden_records_replay_cleanly() {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../");
-
     for path in GOLDENS {
-        let record_path = base.join(path);
-        let bytes = fs::read(&record_path).expect("read record");
-        let record: Record = from_canonical_json_bytes(&bytes).expect("parse record");
-        let hash = hash_record(&record).expect("hash record");
-        let hash_path = record_path.with_extension("hash");
-        let expected = fs::read_to_string(&hash_path).expect("read hash");
-        assert_eq!(hash, expected.trim(), "hash mismatch for {path}");
+        let record_path = repo_path(path);
+        let record: Record = read_record(&record_path);
+        assert_hash_matches(&record, &record_path);
 
         let mut opts = CliOptions::for_mode(Mode::Replay);
         opts.continue_after_mismatch = false;

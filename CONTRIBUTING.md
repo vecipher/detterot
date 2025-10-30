@@ -24,5 +24,13 @@
   ```
 - Inspect the diffs, re-run the tests without the env var to confirm the refreshed outputs, and include the updated golden files in your commit.
 
+## Refreshing trading goldens
+- Scripted trading fixtures live under `repro/trading/` and are validated by `cargo test -p game --features deterministic --test trading_replay`.
+- To update them after intentional logic changes, set `DETTEROT_UPDATE_GOLDENS=1` so the test rewrites the canonical JSON snapshots and `.hash` digests:
+  ```
+  DETTEROT_UPDATE_GOLDENS=1 cargo test -p game --features deterministic --test trading_replay
+  ```
+- Inspect the changes, rerun the test without the environment variable to confirm the new outputs, and commit the refreshed goldens alongside the code change.
+
 ## Formatting
 - Run `cargo fmt --all` locally before pushing to avoid CI failures on the formatting check.
