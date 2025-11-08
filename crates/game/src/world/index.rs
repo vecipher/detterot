@@ -202,7 +202,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
             // Convert the world graph to the data structures we need
             let mut hub_names = HashMap::new();
             let mut hub_specs = HashMap::new();
-            
+
             // Sort hubs by their names to ensure deterministic HubId assignment
             let mut sorted_hubs: Vec<(&String, &HubSpec)> = world_graph.hubs.iter().collect();
             sorted_hubs.sort_by_key(|(name, _)| *name);
@@ -215,7 +215,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
 
             let mut neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>> = HashMap::new();
             let mut route_weather = HashMap::new();
-            
+
             // Sort links by their names to ensure deterministic RouteId assignment
             let mut sorted_links: Vec<(&String, &LinkSpec)> = world_graph.links.iter().collect();
             sorted_links.sort_by_key(|(name, _)| *name);
@@ -234,8 +234,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                 neighbors.entry(*to_hub_id).or_default().push(route_id);
 
                 // Determine weather for this route using weather resolver
-                let weather = weather_resolver
-                    .resolve_weather(&link_spec.style, link_name);
+                let weather = weather_resolver.resolve_weather(&link_spec.style, link_name);
                 route_weather.insert(route_id, weather);
             }
 

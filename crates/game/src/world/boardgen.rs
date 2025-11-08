@@ -115,7 +115,7 @@ fn generate_cover(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Vec<Cover> {
     // Generate cover density ~8-12% of cells as specified
     let total_cells = w * h;
     // Using integer arithmetic: multiply by 100 first, then divide by 100
-    let min_density = (total_cells * 8) / 100;  // 8%
+    let min_density = (total_cells * 8) / 100; // 8%
     let max_density = (total_cells * 12) / 100; // 12%
     let cover_range = max_density.saturating_sub(min_density);
     let cover_count = if cover_range > 0 {
