@@ -2,7 +2,7 @@ use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 
 use crate::systems::economy::state::RngCursor;
-use crate::systems::economy::{EconState, HubId, MoneyCents};
+use crate::systems::economy::{EconState, HubId, MoneyCents, RouteId};
 use crate::systems::save::InventorySlot;
 use crate::systems::trading::inventory::Cargo;
 
@@ -16,6 +16,8 @@ pub struct AppState {
     pub cargo: Cargo,
     pub rng_cursors: Vec<RngCursor>,
     pub wallet: MoneyCents,
+    pub last_board_hash: u64,
+    pub visited_links: Vec<RouteId>,
 }
 
 impl Default for AppState {
@@ -29,6 +31,8 @@ impl Default for AppState {
             cargo: Cargo::default(),
             rng_cursors: Vec::new(),
             wallet: MoneyCents::ZERO,
+            last_board_hash: 0,
+            visited_links: Vec::new(),
         }
     }
 }
@@ -42,6 +46,8 @@ impl PartialEq for AppState {
             && self.cargo == other.cargo
             && self.rng_cursors == other.rng_cursors
             && self.wallet == other.wallet
+            && self.last_board_hash == other.last_board_hash
+            && self.visited_links == other.visited_links
             && econ_eq(&self.econ, &other.econ)
     }
 }

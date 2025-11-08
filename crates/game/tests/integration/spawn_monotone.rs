@@ -13,7 +13,7 @@ fn spawn_budget_monotonic_with_pp() {
         let mut prior = None;
         for band in 0..=4 {
             let pp = Pp((band * 100) as u16);
-            let budget = compute_spawn_budget(pp, weather, prior, &cfg);
+            let budget = compute_spawn_budget(pp, weather, prior, &cfg, None);
             if let Some(prev) = prior {
                 assert!(
                     budget.enemies >= prev,

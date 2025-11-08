@@ -99,3 +99,39 @@ jobs:
           path: |
             repro/trading/*.json
             repro/trading/*.hash
+
+  board_goldens:
+    needs: checks
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config
+      - name: Run board goldens
+        run: cargo test -p game boards_golden_verify
+      - name: Upload board goldens on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: board-goldens-${{ matrix.os }}
+          path: |
+            repro/boards/*.json
+            repro/boards/*.hash
+
+  grep-guard:
+    needs: checks
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard against nondet APIs in world/**
+        run: ci/grep_banned_random.sh world

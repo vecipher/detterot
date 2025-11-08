@@ -74,6 +74,8 @@ fn sample_app_state() -> AppState {
             draws: 24,
         }],
         wallet: MoneyCents(100_000),
+        last_board_hash: 0,
+        visited_links: Vec::new(),
     }
 }
 

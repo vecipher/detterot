@@ -1,0 +1,23 @@
+[defaults]     # mapping Weather per style
+coast = "Rains"
+ridge = "Windy" 
+wetland = "Fog"
+
+[overrides]    # fixed (link_id -> Weather) for goldens if desired
+"L01" = "Fog"
+
+[effects]      # weather effects on gameplay
+clear_los_m = 1000
+rains_los_m = 800
+fog_los_m = 600
+windy_los_m = 900
+
+clear_drift_mm = 0
+rains_drift_mm = 20
+fog_drift_mm = 0
+windy_drift_mm = 35
+
+clear_agg_pct = 0
+rains_agg_pct = 5
+fog_agg_pct = 8
+windy_agg_pct = 3

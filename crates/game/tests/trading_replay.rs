@@ -197,6 +197,8 @@ fn seeded_app_state(seed: u64) -> AppState {
             draws: 12 + seed as u32,
         }],
         wallet: MoneyCents(200_000 + (seed as i64) * 1_000),
+        last_board_hash: 0,
+        visited_links: Vec::new(),
     }
 }
 
