@@ -12,8 +12,6 @@ pub fn load_world_graph(path: &Path) -> anyhow::Result<WorldGraph> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use super::*;
 
     #[test]

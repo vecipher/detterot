@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::systems::economy::state::RngCursor;
-use crate::systems::economy::{
-    CommodityId, EconomyDay, HubId, MoneyCents, PendingPlanting, Pp, RouteId,
-};
+use crate::systems::economy::{EconomyDay, HubId, MoneyCents, PendingPlanting, Pp, RouteId};
 
-use super::{BasisSave, CargoItemSave, CargoSave, CommoditySave, InventorySlot, SaveV11};
+use super::{BasisSave, CargoSave, CommoditySave, InventorySlot, SaveV11};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,8 +63,10 @@ pub fn migrate_v11_to_v12(v11: SaveV11) -> SaveV12 {
 
 #[cfg(test)]
 mod tests {
+    use crate::systems::economy::{CommodityId, RouteId};
+    use crate::systems::save::CargoItemSave;
+
     use super::*;
-    use crate::systems::economy::RouteId;
 
     #[test]
     fn migrate_v11_to_v12_preserves_data() {

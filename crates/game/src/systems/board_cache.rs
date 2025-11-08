@@ -14,6 +14,7 @@ pub struct BoardCache {
 struct CachedBoard {
     board: Board,
     hash: u64,
+    #[allow(dead_code)]
     timestamp: u64,
 }
 

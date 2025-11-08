@@ -32,10 +32,12 @@ fn sort_json_value(value: serde_json::Value) -> serde_json::Value {
     }
 }
 
+#[allow(dead_code)]
 struct CanonicalFormatter<W> {
     writer: W,
 }
 
+#[allow(dead_code)]
 impl<W> CanonicalFormatter<W> {
     fn new(writer: W) -> Self {
         Self { writer }

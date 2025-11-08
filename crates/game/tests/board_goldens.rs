@@ -19,8 +19,7 @@ struct SeedsFile {
 
 fn parse_link_id(link_str: &str) -> RouteId {
     // Parse format like "L01" to get numeric part and convert to RouteId
-    if link_str.starts_with('L') {
-        let num_part = &link_str[1..]; // Remove 'L'
+    if let Some(num_part) = link_str.strip_prefix('L') {
         if let Ok(num) = num_part.parse::<u16>() {
             return RouteId(num);
         }

@@ -8,7 +8,7 @@ use crate::systems::economy::Weather;
 
 use bevy::prelude::Resource;
 
-#[derive(Debug, Clone, Deserialize, Resource)]
+#[derive(Debug, Clone, Deserialize, Resource, Default)]
 #[serde(deny_unknown_fields)]
 pub struct WeatherConfig {
     #[serde(default)]
@@ -65,16 +65,6 @@ impl Default for WeatherEffects {
             rains_agg_pct: default_rains_agg(),
             fog_agg_pct: default_fog_agg(),
             windy_agg_pct: default_windy_agg(),
-        }
-    }
-}
-
-impl Default for WeatherConfig {
-    fn default() -> Self {
-        Self {
-            defaults: HashMap::new(),
-            overrides: HashMap::new(),
-            effects: WeatherEffects::default(),
         }
     }
 }

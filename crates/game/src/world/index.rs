@@ -8,8 +8,8 @@ use smallvec::SmallVec;
 
 use crate::systems::economy::{HubId, RouteId, Weather};
 use crate::world::loader::load_world_graph;
-use crate::world::schema::{HubSpec, WorldGraph};
-use crate::world::weather::{load_weather_config, WeatherConfig};
+use crate::world::schema::{HubSpec, LinkSpec};
+use crate::world::weather::load_weather_config;
 
 static GRAPH: OnceLock<WorldGraphData> = OnceLock::new();
 
@@ -116,11 +116,14 @@ struct ClosuresConfig {
     closed: Vec<String>,
 }
 
+#[allow(dead_code)]
 struct WorldGraphData {
     neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>>,
     weather: HashMap<RouteId, Weather>,
     closed_routes: HashSet<RouteId>,
+    #[allow(dead_code)]
     hub_names: HashMap<String, HubId>,
+    #[allow(dead_code)]
     hub_specs: HashMap<HubId, HubSpec>,
 }
 
@@ -199,20 +202,25 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
             // Convert the world graph to the data structures we need
             let mut hub_names = HashMap::new();
             let mut hub_specs = HashMap::new();
-            let mut next_hub_id = 0u16;
+            
+            // Sort hubs by their names to ensure deterministic HubId assignment
+            let mut sorted_hubs: Vec<(&String, &HubSpec)> = world_graph.hubs.iter().collect();
+            sorted_hubs.sort_by_key(|(name, _)| *name);
 
-            for (hub_name, hub_spec) in &world_graph.hubs {
-                let hub_id = HubId(next_hub_id);
-                next_hub_id += 1;
+            for (i, (hub_name, hub_spec)) in sorted_hubs.into_iter().enumerate() {
+                let hub_id = HubId(i as u16);
                 hub_names.insert(hub_name.clone(), hub_id);
                 hub_specs.insert(hub_id, hub_spec.clone());
             }
 
             let mut neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>> = HashMap::new();
             let mut route_weather = HashMap::new();
-            let mut next_route_id = 0u16;
+            
+            // Sort links by their names to ensure deterministic RouteId assignment
+            let mut sorted_links: Vec<(&String, &LinkSpec)> = world_graph.links.iter().collect();
+            sorted_links.sort_by_key(|(name, _)| *name);
 
-            for (_link_name, link_spec) in &world_graph.links {
+            for (i, (link_name, link_spec)) in sorted_links.into_iter().enumerate() {
                 let from_hub_id = hub_names
                     .get(&link_spec.from)
                     .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.from))?;
@@ -220,15 +228,14 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                     .get(&link_spec.to)
                     .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.to))?;
 
-                let route_id = RouteId(next_route_id);
-                next_route_id += 1;
+                let route_id = RouteId(i as u16);
 
                 neighbors.entry(*from_hub_id).or_default().push(route_id);
                 neighbors.entry(*to_hub_id).or_default().push(route_id);
 
                 // Determine weather for this route using weather resolver
                 let weather = weather_resolver
-                    .resolve_weather(&link_spec.style, &format!("L{:02}", route_id.0));
+                    .resolve_weather(&link_spec.style, link_name);
                 route_weather.insert(route_id, weather);
             }
 

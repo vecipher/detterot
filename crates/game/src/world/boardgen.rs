@@ -20,7 +20,7 @@ pub fn generate_board(
     seed_bytes.extend_from_slice(&world_seed.to_le_bytes());
     seed_bytes.extend_from_slice(&econ_version.to_le_bytes());
     seed_bytes.extend_from_slice(&link_id.0.to_le_bytes());
-    seed_bytes.extend_from_slice(&(style.as_bytes().len() as u64).to_le_bytes());
+    seed_bytes.extend_from_slice(&(style.len() as u64).to_le_bytes());
     seed_bytes.extend_from_slice(style.as_bytes());
     seed_bytes.extend_from_slice(&(weather as u8).to_le_bytes());
 
@@ -80,10 +80,10 @@ fn generate_walls(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Vec<Wall> {
     let wall_count = (rng.next_u32() % 7) + 6; // 6..=12
 
     for _ in 0..wall_count {
-        let is_horizontal = rng.next_u32() % 2 == 0;
+        let is_horizontal = rng.next_u32().is_multiple_of(2);
         let x = (rng.next_u32() as i32) % w as i32;
         let y = (rng.next_u32() as i32) % h as i32;
-        let len = ((rng.next_u32() % 8) + 3) as u32; // 3..=10
+        let len = (rng.next_u32() % 8) + 3; // 3..=10
 
         // Clamp coordinates and length to board bounds
         let x = x.max(1).min(w as i32 - 2);
@@ -114,8 +114,9 @@ fn generate_cover(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Vec<Cover> {
 
     // Generate cover density ~8-12% of cells as specified
     let total_cells = w * h;
-    let min_density = (total_cells as f32 * 0.08) as u32;
-    let max_density = (total_cells as f32 * 0.12) as u32;
+    // Using integer arithmetic: multiply by 100 first, then divide by 100
+    let min_density = (total_cells * 8) / 100;  // 8%
+    let max_density = (total_cells * 12) / 100; // 12%
     let cover_range = max_density.saturating_sub(min_density);
     let cover_count = if cover_range > 0 {
         min_density + (rng.next_u32() % (cover_range + 1))
