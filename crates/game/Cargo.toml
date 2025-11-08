@@ -24,6 +24,7 @@ serde_json = "1"
 thiserror = "2"
 toml = "0.8"
 wyhash = "0.5"
+smallvec = "1"
 worldgen = { path = "../worldgen" }
 
 [features]
@@ -33,6 +34,7 @@ dev = ["avian_physics", "avian3d/debug-plugin"]
 deterministic = []
 econ_logs = []
 m2_logs = []
+m3_logs = []
 
 [dev-dependencies]
 tempfile = "3"

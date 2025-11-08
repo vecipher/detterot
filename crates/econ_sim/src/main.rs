@@ -112,6 +112,7 @@ fn seed_state(args: &Args, rp: &Rulepack) -> (EconState, Vec<HubMetadata>) {
         di_bp,
         di_overlay_bp: 0,
         basis_bp: HashMap::new(),
+        basis_drivers: HashMap::new(),
         pp: Pp(pp_value),
         rot_u16: 0,
         pending_planting: Vec::new(),
