@@ -5,7 +5,7 @@ pub fn canonical_json<T: Serialize>(value: &T) -> Result<String, serde_json::Err
     let json_value = serde_json::to_value(value)?;
     let sorted_json = sort_json_value(json_value);
     let json_string = serde_json::to_string(&sorted_json)?;
-    
+
     // Ensure LF line endings
     let mut s = json_string;
     s = s.replace("\r\n", "\n");
@@ -18,16 +18,16 @@ fn sort_json_value(value: serde_json::Value) -> serde_json::Value {
             // Sort the keys in the map
             let mut sorted_items = map.into_iter().collect::<Vec<_>>();
             sorted_items.sort_by(|(a, _), (b, _)| a.cmp(b));
-            
+
             let mut sorted_map = serde_json::Map::new();
             for (k, v) in sorted_items {
                 sorted_map.insert(k, sort_json_value(v));
             }
             serde_json::Value::Object(sorted_map)
-        },
+        }
         serde_json::Value::Array(arr) => {
             serde_json::Value::Array(arr.into_iter().map(sort_json_value).collect())
-        },
+        }
         _ => value, // For primitives, return as is
     }
 }
@@ -147,7 +147,7 @@ mod tests {
         // Should be: {"a_field":1,"m_field":2,"z_field":3}
         assert!(json.find("a_field").unwrap() < json.find("m_field").unwrap());
         assert!(json.find("m_field").unwrap() < json.find("z_field").unwrap());
-        
+
         // Verify the exact format
         assert_eq!(json, r#"{"a_field":1,"m_field":2,"z_field":3}"#);
     }
@@ -185,9 +185,7 @@ mod tests {
             arr: Vec<u32>,
         }
 
-        let obj = TestObj {
-            arr: vec![3, 1, 2],
-        };
+        let obj = TestObj { arr: vec![3, 1, 2] };
 
         let json = canonical_json(&obj).unwrap();
         assert!(json.contains(r#"[3,1,2]"#)); // arrays preserve order

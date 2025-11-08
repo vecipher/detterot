@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::systems::economy::state::RngCursor;
-use crate::systems::economy::{CommodityId, EconomyDay, HubId, MoneyCents, PendingPlanting, Pp, RouteId};
+use crate::systems::economy::{
+    CommodityId, EconomyDay, HubId, MoneyCents, PendingPlanting, Pp, RouteId,
+};
 
 use super::{BasisSave, CargoItemSave, CargoSave, CommoditySave, InventorySlot, SaveV11};
 
@@ -24,7 +26,7 @@ pub struct SaveV12 {
     pub cargo: CargoSave, // Reuse the v1.1 CargoSave
     pub pending_planting: Vec<PendingPlanting>,
     pub rng_cursors: Vec<RngCursor>,
-    
+
     // M4 additions
     pub last_board_hash: u64,
     pub visited_links: Vec<RouteId>,
@@ -49,7 +51,7 @@ impl From<SaveV11> for SaveV12 {
             cargo: v11.cargo,
             pending_planting: v11.pending_planting,
             rng_cursors: v11.rng_cursors,
-            
+
             // M4 additions - defaults
             last_board_hash: 0,
             visited_links: Vec::new(),
@@ -102,7 +104,7 @@ mod tests {
         assert_eq!(v12.rot, v11.rot);
         assert_eq!(v12.debt_cents, v11.debt_cents);
         assert_eq!(v12.wallet_cents, v11.wallet_cents);
-        
+
         // Check that new fields have defaults
         assert_eq!(v12.last_board_hash, 0);
         assert_eq!(v12.visited_links, Vec::<RouteId>::new());

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 #[derive(Debug, serde::Deserialize)]
 struct SeedSpec {
     world_seed: u64,
-    link: String,  // This will be converted to a RouteId
+    link: String, // This will be converted to a RouteId
     weather: String,
 }
 
@@ -46,9 +46,9 @@ fn boards_golden_verify() -> Result<()> {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
         .unwrap_or_else(|_| "/Users/vkfyka/Desktop/detterot/crates/game".to_string());
     let project_root = std::path::Path::new(&manifest_dir)
-        .parent()        // go from crates/game to crates/
+        .parent() // go from crates/game to crates/
         .unwrap()
-        .parent()        // go from crates/ to project root
+        .parent() // go from crates/ to project root
         .unwrap();
 
     let seeds_path = project_root.join("repro/seeds.toml");
@@ -93,11 +93,21 @@ fn boards_golden_verify() -> Result<()> {
             let expected_hash_hex = std::fs::read_to_string(&hash_path)?.trim().to_string();
             let expected_hash = u64::from_str_radix(&expected_hash_hex, 16)?;
 
-            assert_eq!(computed_hash, expected_hash, "Hash mismatch for seed {}", seed_name);
-            println!("  ✓ Hash matches for seed {}: {:016x}", seed_name, computed_hash);
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Hash mismatch for seed {}",
+                seed_name
+            );
+            println!(
+                "  ✓ Hash matches for seed {}: {:016x}",
+                seed_name, computed_hash
+            );
         } else {
             // If the golden file doesn't exist, just print the computed hash for reference
-            eprintln!("Golden hash file not found for seed {}: {:016x}", seed_name, computed_hash);
+            eprintln!(
+                "Golden hash file not found for seed {}: {:016x}",
+                seed_name, computed_hash
+            );
         }
     }
 
@@ -113,9 +123,9 @@ fn generate_golden_boards() -> Result<()> {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
         .unwrap_or_else(|_| "/Users/vkfyka/Desktop/detterot/crates/game".to_string());
     let project_root = std::path::Path::new(&manifest_dir)
-        .parent()        // go from crates/game to crates/
+        .parent() // go from crates/game to crates/
         .unwrap()
-        .parent()        // go from crates/ to project root
+        .parent() // go from crates/ to project root
         .unwrap();
 
     let seeds_path = project_root.join("repro/seeds.toml");

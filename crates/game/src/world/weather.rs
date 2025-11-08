@@ -30,7 +30,7 @@ pub struct WeatherEffects {
     pub fog_los_m: u32,
     #[serde(default = "default_windy_los")]
     pub windy_los_m: u32,
-    
+
     #[serde(default = "default_clear_drift")]
     pub clear_drift_mm: u32,
     #[serde(default = "default_rains_drift")]
@@ -39,7 +39,7 @@ pub struct WeatherEffects {
     pub fog_drift_mm: u32,
     #[serde(default = "default_windy_drift")]
     pub windy_drift_mm: u32,
-    
+
     #[serde(default = "default_clear_agg")]
     pub clear_agg_pct: i32,
     #[serde(default = "default_rains_agg")]
@@ -79,38 +79,62 @@ impl Default for WeatherConfig {
     }
 }
 
-fn default_clear_los() -> u32 { 1000 }
-fn default_rains_los() -> u32 { 800 }
-fn default_fog_los() -> u32 { 600 }
-fn default_windy_los() -> u32 { 900 }
+fn default_clear_los() -> u32 {
+    1000
+}
+fn default_rains_los() -> u32 {
+    800
+}
+fn default_fog_los() -> u32 {
+    600
+}
+fn default_windy_los() -> u32 {
+    900
+}
 
-fn default_clear_drift() -> u32 { 0 }
-fn default_rains_drift() -> u32 { 20 }
-fn default_fog_drift() -> u32 { 0 }
-fn default_windy_drift() -> u32 { 35 }
+fn default_clear_drift() -> u32 {
+    0
+}
+fn default_rains_drift() -> u32 {
+    20
+}
+fn default_fog_drift() -> u32 {
+    0
+}
+fn default_windy_drift() -> u32 {
+    35
+}
 
-fn default_clear_agg() -> i32 { 0 }
-fn default_rains_agg() -> i32 { 5 }
-fn default_fog_agg() -> i32 { 8 }
-fn default_windy_agg() -> i32 { 3 }
+fn default_clear_agg() -> i32 {
+    0
+}
+fn default_rains_agg() -> i32 {
+    5
+}
+fn default_fog_agg() -> i32 {
+    8
+}
+fn default_windy_agg() -> i32 {
+    3
+}
 
 impl WeatherConfig {
     pub fn load_from_path(path: &Path) -> anyhow::Result<Self> {
-        let raw = std::fs::read_to_string(path)
-            .with_context(|| format!("reading {}", path.display()))?;
+        let raw =
+            std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
         toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))
     }
-    
+
     pub fn resolve_weather(&self, style: &str, link_id: &str) -> Weather {
         // Check for overrides first
         if let Some(override_weather) = self.overrides.get(link_id) {
             return *override_weather;
         }
-        
+
         // Check defaults for the style
         self.defaults.get(style).copied().unwrap_or(Weather::Clear)
     }
-    
+
     pub fn get_los_m(&self, weather: Weather) -> u32 {
         match weather {
             Weather::Clear => self.effects.clear_los_m,
@@ -119,7 +143,7 @@ impl WeatherConfig {
             Weather::Windy => self.effects.windy_los_m,
         }
     }
-    
+
     pub fn get_drift_mm(&self, weather: Weather) -> u32 {
         match weather {
             Weather::Clear => self.effects.clear_drift_mm,
@@ -128,7 +152,7 @@ impl WeatherConfig {
             Weather::Windy => self.effects.windy_drift_mm,
         }
     }
-    
+
     pub fn get_agg_pct(&self, weather: Weather) -> i32 {
         match weather {
             Weather::Clear => self.effects.clear_agg_pct,
@@ -158,7 +182,9 @@ mod tests {
             ]
             .into_iter()
             .collect(),
-            overrides: vec![("L01".to_string(), Weather::Fog)].into_iter().collect(),
+            overrides: vec![("L01".to_string(), Weather::Fog)]
+                .into_iter()
+                .collect(),
             effects: WeatherEffects::default(),
         };
 
@@ -169,32 +195,35 @@ mod tests {
 
         // Test override precedence
         assert_eq!(config.resolve_weather("coast", "L01"), Weather::Fog); // Override wins
-        
+
         // Test unknown style defaults to Clear
-        assert_eq!(config.resolve_weather("unknown_style", "L05"), Weather::Clear);
+        assert_eq!(
+            config.resolve_weather("unknown_style", "L05"),
+            Weather::Clear
+        );
     }
 
     #[test]
     fn weather_effects_access() {
         let config = WeatherConfig::default();
-        
+
         // Verify the defaults match spec
         assert_eq!(config.get_los_m(Weather::Clear), 1000);
         assert_eq!(config.get_los_m(Weather::Rains), 800);
         assert_eq!(config.get_los_m(Weather::Fog), 600);
         assert_eq!(config.get_los_m(Weather::Windy), 900);
-        
+
         assert_eq!(config.get_drift_mm(Weather::Clear), 0);
         assert_eq!(config.get_drift_mm(Weather::Rains), 20);
         assert_eq!(config.get_drift_mm(Weather::Fog), 0);
         assert_eq!(config.get_drift_mm(Weather::Windy), 35);
-        
+
         assert_eq!(config.get_agg_pct(Weather::Clear), 0);
         assert_eq!(config.get_agg_pct(Weather::Rains), 5);
         assert_eq!(config.get_agg_pct(Weather::Fog), 8);
         assert_eq!(config.get_agg_pct(Weather::Windy), 3);
     }
-    
+
     #[test]
     fn unknown_fields_rejected() {
         let bad_toml = r#"
@@ -205,7 +234,7 @@ mod tests {
             clear_los_m = 1000
             unknown_field = 42
         "#;
-        
+
         let result = toml::from_str::<WeatherConfig>(bad_toml);
         assert!(result.is_err(), "Expected unknown field to cause error");
     }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::systems::economy::RouteId;
-use crate::world::boardgen::{generate_board, board_hash};
+use crate::world::boardgen::{board_hash, generate_board};
 use crate::world::schema::Board;
 use crate::world::weather::WeatherConfig;
 
@@ -39,11 +39,14 @@ impl BoardCache {
         let timestamp = self.boards.len() as u64;
 
         // Insert the new board
-        self.boards.insert(link_id, CachedBoard {
-            board,
-            hash,
-            timestamp,
-        });
+        self.boards.insert(
+            link_id,
+            CachedBoard {
+                board,
+                hash,
+                timestamp,
+            },
+        );
 
         // Now return a reference to the newly inserted board
         let cached = self.boards.get(&link_id).unwrap();
@@ -76,18 +79,16 @@ pub fn prepare_board_for_link(
     link_id: RouteId,
     style: &str,
     weather: crate::systems::economy::Weather,
-) -> u64 { // Returns the board hash
+) -> u64 {
+    // Returns the board hash
     let default_config = WeatherConfig::default();
-    let config = weather_config.as_ref().map(|w| w.as_ref()).unwrap_or(&default_config);
-    let (hash, _board) = board_cache.get_or_generate(
-        world_seed,
-        econ_version,
-        link_id,
-        style,
-        weather,
-        config,
-    );
-    
+    let config = weather_config
+        .as_ref()
+        .map(|w| w.as_ref())
+        .unwrap_or(&default_config);
+    let (hash, _board) =
+        board_cache.get_or_generate(world_seed, econ_version, link_id, style, weather, config);
+
     hash
 }
 
@@ -100,29 +101,36 @@ mod tests {
     fn director_uses_board() {
         let mut cache = BoardCache::default();
         let config = WeatherConfig::default();
-        
+
         // Test that boards are properly cached and retrieved
         let link_id = RouteId(1);
-        let (hash1, board1) = cache.get_or_generate(12345, 1, link_id, "coast", Weather::Fog, &config);
-        // Clone the board data to avoid borrowing conflicts  
+        let (hash1, board1) =
+            cache.get_or_generate(12345, 1, link_id, "coast", Weather::Fog, &config);
+        // Clone the board data to avoid borrowing conflicts
         let board1_clone = board1.clone();
-        
-        let (hash2, board2) = cache.get_or_generate(12345, 1, link_id, "coast", Weather::Fog, &config);
-        
+
+        let (hash2, board2) =
+            cache.get_or_generate(12345, 1, link_id, "coast", Weather::Fog, &config);
+
         // Same inputs should return the same cached board
         assert_eq!(hash1, hash2);
         assert_eq!(board1_clone.link_id, board2.link_id);
         assert_eq!(board1_clone.style, board2.style);
         assert_eq!(board1_clone.weather, board2.weather);
-        
+
         // Different inputs should return different boards (with high probability)
-        let (hash3, _) = cache.get_or_generate(12346, 1, RouteId(2), "coast", Weather::Fog, &config); // Different seed and different link_id
-        assert_ne!(hash1, hash3, "Different seeds should produce different boards");
-        
+        let (hash3, _) =
+            cache.get_or_generate(12346, 1, RouteId(2), "coast", Weather::Fog, &config); // Different seed and different link_id
+        assert_ne!(
+            hash1, hash3,
+            "Different seeds should produce different boards"
+        );
+
         // Verify the boards have proper structure (spawns, dims, etc.)
         let board = cache.get_board(link_id).unwrap();
         assert_eq!(board.dims.w, 64); // Standard board size
         assert_eq!(board.dims.h, 64);
-        assert!(!board.spawns.player.is_empty() || !board.spawns.enemy.is_empty()); // Should have some spawns
+        assert!(!board.spawns.player.is_empty() || !board.spawns.enemy.is_empty());
+        // Should have some spawns
     }
 }

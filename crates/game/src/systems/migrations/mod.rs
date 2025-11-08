@@ -3,7 +3,11 @@
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::systems::save::{v1_1::migrate_v1_to_v11, v1_2::{migrate_v11_to_v12, SaveV12}, SaveV11};
+use crate::systems::save::{
+    v1_1::migrate_v1_to_v11,
+    v1_2::{migrate_v11_to_v12, SaveV12},
+    SaveV11,
+};
 
 pub mod v1;
 

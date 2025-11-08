@@ -5,15 +5,15 @@ use anyhow::Context;
 use super::schema::WorldGraph;
 
 pub fn load_world_graph(path: &Path) -> anyhow::Result<WorldGraph> {
-    let raw = std::fs::read_to_string(path)
-        .with_context(|| format!("reading {}", path.display()))?;
+    let raw =
+        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    
+
     use super::*;
 
     #[test]
@@ -26,10 +26,10 @@ mod tests {
             [links]
             L01 = { from = "H01", to = "H02", style = "coast", base_minutes = 9 }
         "#;
-        
+
         let result = toml::from_str::<WorldGraph>(bad_toml);
         assert!(result.is_err(), "Expected unknown field to cause error");
-        
+
         // Test good toml with proper structure
         let good_toml = r#"
             [hubs]
@@ -39,10 +39,10 @@ mod tests {
             [links]
             L01 = { from = "H01", to = "H02", style = "coast", base_minutes = 9 }
         "#;
-        
+
         let result = toml::from_str::<WorldGraph>(good_toml);
         assert!(result.is_ok(), "Expected valid TOML to parse successfully");
-        
+
         let graph = result.unwrap();
         assert_eq!(graph.hubs.len(), 2);
         assert_eq!(graph.links.len(), 1);
