@@ -2216,6 +2216,7 @@ dependencies = [
  "repro",
  "serde",
  "serde_json",
+ "smallvec",
  "tempfile",
  "thiserror 2.0.17",
  "toml",

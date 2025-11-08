@@ -40,6 +40,13 @@ impl CommandQueue {
         });
     }
 
+    /// Convenience helper for recording unit counts without leaking u32 into
+    /// the deterministic command stream format.
+    pub fn meter_units(&mut self, key: &str, units: u32) {
+        let clamped = units.min(i32::MAX as u32) as i32;
+        self.meter(key, clamped);
+    }
+
     /// Drain the queue, returning all buffered commands.
     pub fn drain(&mut self) -> Vec<Command> {
         std::mem::take(&mut self.buf)
