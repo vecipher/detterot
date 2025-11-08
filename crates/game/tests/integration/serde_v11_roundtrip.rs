@@ -112,5 +112,7 @@ fn rejects_unknown_keys() {
 
     let err = load(&path).expect_err("unknown key should fail");
     let err_str = format!("{}", err);
-    assert!(err_str.contains("unknown") || err_str.contains("field") || err_str.contains("invalid"));
+    assert!(
+        err_str.contains("unknown") || err_str.contains("field") || err_str.contains("invalid")
+    );
 }
