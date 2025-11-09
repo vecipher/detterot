@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::OnceLock;
 
@@ -7,12 +7,53 @@ use serde::Deserialize;
 use smallvec::SmallVec;
 
 use crate::systems::economy::{HubId, RouteId, Weather};
+use crate::world::loader::load_world_graph;
+use crate::world::schema::{HubSpec, LinkSpec};
+use crate::world::weather::load_weather_config;
 
-static ROUTES: OnceLock<RoutesData> = OnceLock::new();
+static GRAPH: OnceLock<WorldGraphData> = OnceLock::new();
+
+fn load_route_closures() -> anyhow::Result<HashSet<RouteId>> {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let primary = Path::new(manifest)
+        .join("..")
+        .join("..")
+        .join("assets/world/closures.toml");
+    let search_paths = [Path::new("assets/world/closures.toml"), primary.as_path()];
+
+    let mut closures_path = None;
+    for path in search_paths {
+        if path.exists() {
+            closures_path = Some(path.to_path_buf());
+            break;
+        }
+    }
+
+    if let Some(path) = closures_path {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        let closures: ClosuresConfig =
+            toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
+
+        // Convert string IDs to RouteId - for legacy format compatibility
+        let mut closed_routes = HashSet::new();
+        for link_id in &closures.closed {
+            if link_id.starts_with("L") && link_id.len() >= 3 {
+                if let Ok(route_num) = link_id[1..].parse::<u16>() {
+                    closed_routes.insert(RouteId(route_num));
+                }
+            }
+        }
+        Ok(closed_routes)
+    } else {
+        Ok(HashSet::new()) // No closures file, return empty set
+    }
+}
 
 pub trait WorldIndex {
     fn neighbors(hub: HubId) -> SmallVec<[RouteId; 6]>;
     fn route_weather(route: RouteId) -> Weather;
+    fn is_route_closed(route: RouteId) -> bool;
 }
 
 pub struct StaticWorldIndex;
@@ -32,6 +73,40 @@ impl WorldIndex for StaticWorldIndex {
             .get(&route)
             .copied()
             .unwrap_or(Weather::Clear)
+    }
+
+    fn is_route_closed(route: RouteId) -> bool {
+        ensure_loaded().closed_routes.contains(&route)
+    }
+}
+
+// Raw closure loading function for new graph format
+fn load_route_closures_raw() -> anyhow::Result<HashSet<String>> {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let primary = Path::new(manifest)
+        .join("..")
+        .join("..")
+        .join("assets/world/closures.toml");
+    let search_paths = [Path::new("assets/world/closures.toml"), primary.as_path()];
+
+    let mut closures_path = None;
+    for path in search_paths {
+        if path.exists() {
+            closures_path = Some(path.to_path_buf());
+            break;
+        }
+    }
+
+    if let Some(path) = closures_path {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        let closures: ClosuresConfig =
+            toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
+
+        // Return the raw string IDs without conversion
+        Ok(closures.closed.into_iter().collect())
+    } else {
+        Ok(HashSet::new()) // No closures file, return empty set
     }
 }
 
@@ -64,68 +139,282 @@ fn splitmix64(state: &mut u64) -> u64 {
     z ^ (z >> 31)
 }
 
-struct RoutesData {
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ClosuresConfig {
+    #[serde(default)]
+    closed: Vec<String>,
+}
+
+#[allow(dead_code)]
+struct WorldGraphData {
     neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>>,
     weather: HashMap<RouteId, Weather>,
+    closed_routes: HashSet<RouteId>,
+    #[allow(dead_code)]
+    hub_names: HashMap<String, HubId>,
+    #[allow(dead_code)]
+    hub_specs: HashMap<HubId, HubSpec>,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RoutesConfig {
-    routes: Vec<RouteSpec>,
+fn ensure_loaded() -> &'static WorldGraphData {
+    GRAPH.get_or_init(|| load_world_graph_data().expect("failed to load world graph"))
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RouteSpec {
-    id: RouteId,
-    from: HubId,
-    to: HubId,
-    weather: Weather,
+fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+
+    // Check for new format first and prefer it
+    let new_primary = Path::new(manifest)
+        .join("..")
+        .join("..")
+        .join("assets/world/graph_v1.toml");
+    let new_search_paths = [
+        Path::new("assets/world/graph_v1.toml"),
+        new_primary.as_path(),
+    ];
+
+    if new_search_paths.iter().any(|path| path.exists()) {
+        // Load new format (with weather and route closures support)
+        let mut graph_path = None;
+        for path in new_search_paths {
+            if path.exists() {
+                graph_path = Some(path.to_path_buf());
+                break;
+            }
+        }
+
+        let graph_path = graph_path.ok_or_else(|| {
+            anyhow::anyhow!("missing world graph asset at {}", new_primary.display())
+        })?;
+
+        let world_graph = load_world_graph(&graph_path)?;
+
+        // Load weather config
+        let weather_primary = Path::new(manifest)
+            .join("..")
+            .join("..")
+            .join("assets/world/weather.toml");
+        let weather_search_paths = [
+            Path::new("assets/world/weather.toml"),
+            weather_primary.as_path(),
+        ];
+
+        let mut weather_config = None;
+        for path in weather_search_paths {
+            if path.exists() {
+                weather_config = Some(load_weather_config(path)?);
+                break;
+            }
+        }
+
+        let weather_resolver = weather_config.unwrap_or_else(|| {
+            // Default weather config if file doesn't exist
+            use crate::world::weather::WeatherConfig;
+            WeatherConfig::default()
+        });
+
+        // Convert the world graph to the data structures we need
+        let mut hub_names = HashMap::new();
+        let mut hub_specs = HashMap::new();
+
+        // Parse hub IDs from names (e.g., "H01" -> 1, "H02" -> 2) to preserve stable IDs
+        let mut used_hub_ids = std::collections::HashSet::new();
+        for (hub_name, hub_spec) in &world_graph.hubs {
+            if hub_name.starts_with('H') && hub_name.len() >= 2 {
+                if let Ok(hub_num) = hub_name[1..].parse::<u16>() {
+                    if hub_num == 0 {
+                        return Err(anyhow::anyhow!(
+                            "hub IDs must be greater than 0: {}",
+                            hub_name
+                        ));
+                    }
+
+                    // Check for duplicate hub IDs
+                    if used_hub_ids.contains(&hub_num) {
+                        return Err(anyhow::anyhow!("duplicate hub ID found: {}", hub_num));
+                    }
+                    used_hub_ids.insert(hub_num);
+
+                    let hub_id = HubId(hub_num);
+                    hub_names.insert(hub_name.clone(), hub_id);
+                    hub_specs.insert(hub_id, hub_spec.clone());
+                } else {
+                    return Err(anyhow::anyhow!("invalid hub name format: {}", hub_name));
+                }
+            } else {
+                return Err(anyhow::anyhow!(
+                    "hub name must start with 'H': {}",
+                    hub_name
+                ));
+            }
+        }
+
+        let mut neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>> = HashMap::new();
+        let mut route_weather = HashMap::new();
+
+        // Create a mapping from link names to RouteIds by parsing the numeric suffix (e.g., "L01" -> 1, "L02" -> 2)
+        let mut link_to_route_id = HashMap::new();
+        let mut used_route_ids = std::collections::HashSet::new();
+
+        for link_name in world_graph.links.keys() {
+            if link_name.starts_with('L') && link_name.len() >= 2 {
+                if let Ok(route_num) = link_name[1..].parse::<u16>() {
+                    if route_num == 0 {
+                        return Err(anyhow::anyhow!(
+                            "route IDs must be greater than 0: {}",
+                            link_name
+                        ));
+                    }
+
+                    // Check for duplicate route IDs
+                    if used_route_ids.contains(&route_num) {
+                        return Err(anyhow::anyhow!("duplicate route ID found: {}", route_num));
+                    }
+                    used_route_ids.insert(route_num);
+
+                    let route_id = RouteId(route_num);
+                    link_to_route_id.insert(link_name.clone(), route_id);
+                } else {
+                    return Err(anyhow::anyhow!("invalid link name format: {}", link_name));
+                }
+            } else {
+                return Err(anyhow::anyhow!(
+                    "link name must start with 'L': {}",
+                    link_name
+                ));
+            }
+        }
+
+        // Process links in alphabetical order to ensure deterministic weather resolution and processing order
+        let mut sorted_links: Vec<(&String, &LinkSpec)> = world_graph.links.iter().collect();
+        sorted_links.sort_by_key(|(name, _)| *name);
+
+        for (link_name, link_spec) in sorted_links {
+            let from_hub_id = hub_names
+                .get(&link_spec.from)
+                .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.from))?;
+            let to_hub_id = hub_names
+                .get(&link_spec.to)
+                .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.to))?;
+
+            let route_id = *link_to_route_id.get(link_name).unwrap();
+
+            neighbors.entry(*from_hub_id).or_default().push(route_id);
+            neighbors.entry(*to_hub_id).or_default().push(route_id);
+
+            // Determine weather for this route using weather resolver
+            let weather = weather_resolver.resolve_weather(&link_spec.style, link_name);
+            route_weather.insert(route_id, weather);
+        }
+
+        // Load route closures - convert link names to corresponding RouteIds
+        let original_closures = load_route_closures_raw()?;
+        let closed_routes = original_closures
+            .iter()
+            .filter_map(|link_name| link_to_route_id.get(link_name).copied())
+            .collect();
+
+        // Ensure no hub has more than 6 neighbors
+        for list in neighbors.values_mut() {
+            list.sort_by_key(|id| id.0);
+            list.truncate(6);
+        }
+
+        Ok(WorldGraphData {
+            neighbors,
+            weather: route_weather,
+            closed_routes,
+            hub_names,
+            hub_specs,
+        })
+    } else {
+        // If new format doesn't exist, fall back to legacy format for backward compatibility
+        let legacy_primary = Path::new(manifest)
+            .join("..")
+            .join("..")
+            .join("assets/world/hubs_min.toml");
+        let legacy_search_paths = [
+            Path::new("assets/world/hubs_min.toml"),
+            legacy_primary.as_path(),
+        ];
+
+        if legacy_search_paths.iter().any(|path| path.exists()) {
+            // Load legacy format to maintain compatibility with existing tests
+            load_legacy_routes()
+        } else {
+            Err(anyhow::anyhow!(
+                "no world graph files found (neither graph_v1.toml nor legacy hubs_min.toml)"
+            ))
+        }
+    }
 }
 
-fn ensure_loaded() -> &'static RoutesData {
-    ROUTES.get_or_init(|| load_routes().expect("failed to load world index"))
-}
-
-fn load_routes() -> anyhow::Result<RoutesData> {
+fn load_legacy_routes() -> anyhow::Result<WorldGraphData> {
     let manifest = env!("CARGO_MANIFEST_DIR");
     let primary = Path::new(manifest)
         .join("..")
         .join("..")
         .join("assets/world/hubs_min.toml");
     let search_paths = [Path::new("assets/world/hubs_min.toml"), primary.as_path()];
+
+    let mut routes_path = None;
     for path in search_paths {
         if path.exists() {
-            return parse_routes(path);
+            routes_path = Some(path.to_path_buf());
+            break;
         }
     }
-    Err(anyhow::anyhow!(
-        "missing world index asset at {}",
-        primary.display()
-    ))
-}
 
-fn parse_routes(path: &Path) -> anyhow::Result<RoutesData> {
-    let raw =
-        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    let routes_path = routes_path
+        .ok_or_else(|| anyhow::anyhow!("missing legacy routes asset at {}", primary.display()))?;
+
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct RoutesConfig {
+        routes: Vec<RouteSpec>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct RouteSpec {
+        id: RouteId,
+        from: HubId,
+        to: HubId,
+        weather: Weather,
+    }
+
+    let raw = std::fs::read_to_string(&routes_path)
+        .with_context(|| format!("reading {}", routes_path.display()))?;
     let config: RoutesConfig =
-        toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
+        toml::from_str(&raw).with_context(|| format!("parsing {}", routes_path.display()))?;
 
     let mut neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>> = HashMap::new();
     let mut weather = HashMap::new();
+
     for route in &config.routes {
         neighbors.entry(route.from).or_default().push(route.id);
         neighbors.entry(route.to).or_default().push(route.id);
         weather.insert(route.id, route.weather);
     }
 
+    // Load route closures
+    let closed_routes = load_route_closures()?;
+
     for list in neighbors.values_mut() {
         list.sort_by_key(|id| id.0);
         list.truncate(6);
     }
 
-    Ok(RoutesData { neighbors, weather })
+    Ok(WorldGraphData {
+        neighbors,
+        weather,
+        closed_routes,
+        hub_names: HashMap::new(), // Empty for legacy format
+        hub_specs: HashMap::new(), // Empty for legacy format
+    })
 }
 
 #[cfg(test)]

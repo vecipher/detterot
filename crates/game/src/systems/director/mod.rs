@@ -263,6 +263,7 @@ fn drive_director(
     context: Res<LegContext>,
     mut queue: ResMut<CommandQueue>,
     pause: Res<PauseState>,
+    weather_config: Option<Res<crate::world::weather::WeatherConfig>>,
 ) {
     if !matches!(state.status, LegStatus::Running | LegStatus::Paused) {
         return;
@@ -272,7 +273,13 @@ fn drive_director(
     }
 
     let previous_budget = memory.last_budget;
-    let budget = compute_spawn_budget(context.pp, state.weather, memory.prior_enemies, &cfg.0);
+    let budget = compute_spawn_budget(
+        context.pp,
+        state.weather,
+        memory.prior_enemies,
+        &cfg.0,
+        weather_config.as_ref().map(|w| w.as_ref()),
+    );
     let spawn_changed = previous_budget.map(|b| b != budget).unwrap_or(true);
     if spawn_changed {
         memory.pending_budget = Some(budget);

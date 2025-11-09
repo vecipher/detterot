@@ -1,0 +1,17 @@
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":0,"weather":"Clear"}
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":0,"weather":"Clear"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":0,"weather":"Windy"}
+{"aggression_pct":8,"drift_mm":0,"los_m":600,"route_id":0,"timestamp":1,"weather":"Fog"}
+{"aggression_pct":8,"drift_mm":0,"los_m":600,"route_id":0,"timestamp":1,"weather":"Fog"}
+{"aggression_pct":5,"drift_mm":20,"los_m":800,"route_id":0,"timestamp":2,"weather":"Rains"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":1,"weather":"Windy"}
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":2,"weather":"Clear"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":3,"weather":"Windy"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":4,"weather":"Windy"}
+{"aggression_pct":8,"drift_mm":0,"los_m":600,"route_id":0,"timestamp":3,"weather":"Fog"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":5,"weather":"Windy"}
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":4,"weather":"Clear"}
+{"aggression_pct":5,"drift_mm":20,"los_m":800,"route_id":0,"timestamp":5,"weather":"Rains"}
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":6,"weather":"Clear"}
+{"aggression_pct":3,"drift_mm":35,"los_m":900,"route_id":0,"timestamp":7,"weather":"Windy"}
+{"aggression_pct":0,"drift_mm":0,"los_m":1000,"route_id":0,"timestamp":8,"weather":"Clear"}

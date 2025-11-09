@@ -28,15 +28,17 @@ fn migration_preserves_econ_fields_and_sets_defaults() {
     assert_eq!(migrated.cargo, CargoSave::default());
     assert_eq!(migrated.wallet_cents, MoneyCents::ZERO);
 
-    let manual = migrate_v1_to_v11(original.clone());
-    assert_eq!(migrated, manual);
+    let manual_v11 = migrate_v1_to_v11(original.clone());
+    let manual_v12 = game::systems::save::v1_2::migrate_v11_to_v12(manual_v11);
+    assert_eq!(migrated, manual_v12);
 
     // Ensure econ bytes stable by comparing serialized slices
     let original_econ = serde_json::to_string_pretty(&original).expect("serialize v1");
-    let migrated_econ = serde_json::to_string_pretty(&manual).expect("serialize v11");
+    let migrated_econ = serde_json::to_string_pretty(&manual_v12).expect("serialize v12");
     let original_fragment: Value = serde_json::from_str(&original_econ).expect("value");
     let migrated_fragment: Value = serde_json::from_str(&migrated_econ).expect("value");
 
+    // Note: Since we're comparing to SaveV12, we need to check that V1 fields are equal
     assert_eq!(original_fragment["di"], migrated_fragment["di"]);
     assert_eq!(original_fragment["basis"], migrated_fragment["basis"]);
 }

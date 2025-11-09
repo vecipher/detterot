@@ -16,8 +16,10 @@ use crate::systems::migrations::{migrate_to_latest, MigrateError};
 use crate::systems::trading::inventory::Cargo;
 
 pub mod v1_1;
+pub mod v1_2;
 
 pub use v1_1::{CargoItemSave, CargoSave, SaveV11};
+pub use v1_2::SaveV12;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -70,7 +72,7 @@ pub enum SaveError {
     Migrate(#[from] MigrateError),
 }
 
-pub fn save(path: &Path, snapshot: &SaveV11) -> Result<(), SaveError> {
+pub fn save(path: &Path, snapshot: &SaveV12) -> Result<(), SaveError> {
     let mut normalized = snapshot.clone();
     normalized.di.sort_by_key(|entry| entry.commodity.0);
     normalized
@@ -91,7 +93,7 @@ pub fn save(path: &Path, snapshot: &SaveV11) -> Result<(), SaveError> {
     Ok(())
 }
 
-pub fn load(path: &Path) -> Result<SaveV11, SaveError> {
+pub fn load(path: &Path) -> Result<SaveV12, SaveError> {
     let raw = fs::read_to_string(path)?;
     let value: serde_json::Value = serde_json::from_str(&raw)?;
     Ok(migrate_to_latest(value)?)
@@ -107,7 +109,7 @@ pub fn load_app_state(path: &Path) -> Result<AppState, SaveError> {
     Ok(app_state_from_snapshot(snapshot))
 }
 
-pub fn snapshot_from_app_state(state: &AppState) -> SaveV11 {
+pub fn snapshot_from_app_state(state: &AppState) -> SaveV12 {
     let mut di: Vec<CommoditySave> = state
         .econ
         .di_bp
@@ -131,7 +133,7 @@ pub fn snapshot_from_app_state(state: &AppState) -> SaveV11 {
         .collect();
     basis.sort_by(|a, b| (a.hub.0, a.commodity.0).cmp(&(b.hub.0, b.commodity.0)));
 
-    SaveV11 {
+    SaveV12 {
         econ_version: state.econ_version,
         world_seed: state.world_seed,
         day: state.econ.day,
@@ -147,10 +149,12 @@ pub fn snapshot_from_app_state(state: &AppState) -> SaveV11 {
         cargo: cargo_to_save(&state.cargo),
         pending_planting: state.econ.pending_planting.clone(),
         rng_cursors: state.rng_cursors.clone(),
+        last_board_hash: state.last_board_hash,
+        visited_links: state.visited_links.clone(),
     }
 }
 
-pub fn app_state_from_snapshot(snapshot: SaveV11) -> AppState {
+pub fn app_state_from_snapshot(snapshot: SaveV12) -> AppState {
     let di_bp = snapshot
         .di
         .iter()
@@ -183,6 +187,8 @@ pub fn app_state_from_snapshot(snapshot: SaveV11) -> AppState {
         cargo: cargo_from_save(snapshot.cargo),
         rng_cursors: snapshot.rng_cursors,
         wallet: snapshot.wallet_cents,
+        last_board_hash: snapshot.last_board_hash,
+        visited_links: snapshot.visited_links,
     }
 }
 

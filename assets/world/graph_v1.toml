@@ -1,0 +1,22 @@
+[hubs]
+# stable integer ids; display names are cosmetic
+H01 = { name="Aster", x_mm=0,     y_mm=0   }
+H02 = { name="Brine", x_mm=20000, y_mm=-5000 }
+H03 = { name="Cinder",x_mm=-16000,y_mm=12000 }
+H04 = { name="Dust", x_mm=15000, y_mm=8000 }
+H05 = { name="Ember", x_mm=-10000, y_mm=-8000 }
+H06 = { name="Flint", x_mm=5000, y_mm=15000 }
+
+[links]
+L01 = { from="H01", to="H02", style="coast",   base_minutes=9 }
+L02 = { from="H02", to="H03", style="ridge",   base_minutes=11 }
+L03 = { from="H01", to="H03", style="wetland", base_minutes=14 }
+L04 = { from="H03", to="H04", style="coast",   base_minutes=7 }
+L05 = { from="H04", to="H05", style="ridge",   base_minutes=12 }
+L06 = { from="H05", to="H06", style="wetland", base_minutes=10 }
+L07 = { from="H01", to="H04", style="ridge",   base_minutes=13 }
+L08 = { from="H02", to="H05", style="coast",   base_minutes=15 }
+L09 = { from="H03", to="H06", style="wetland", base_minutes=8 }
+L10 = { from="H01", to="H06", style="ridge",   base_minutes=9 }
+L11 = { from="H02", to="H04", style="coast",   base_minutes=11 }
+L12 = { from="H05", to="H01", style="wetland", base_minutes=10 }

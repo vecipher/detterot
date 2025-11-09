@@ -1,0 +1,6 @@
+[seeds]
+s01 = { world_seed=42, link="L01", weather="Fog" }
+s02 = { world_seed=42, link="L02", weather="Rains" }
+s03 = { world_seed=99, link="L03", weather="Clear" }
+s04 = { world_seed=123, link="L02", weather="Windy" }
+s05 = { world_seed=123, link="L01", weather="Fog" }

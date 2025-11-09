@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use super::config::DirectorCfg;
 use super::rng::{spawn_subseed, DetRng};
+use crate::world::weather::WeatherConfig;
 
 const DEFAULT_SPAWN_KIND: &str = "bandit";
 
@@ -126,6 +127,7 @@ pub fn compute_spawn_budget(
     weather: Weather,
     prior: Option<u32>,
     cfg: &DirectorCfg,
+    weather_config: Option<&WeatherConfig>,
 ) -> SpawnBudget {
     let pp_band = (pp.0 as i32) / 100;
     let weather_key = format!("{weather:?}");
@@ -136,8 +138,19 @@ pub fn compute_spawn_budget(
         .copied()
         .unwrap_or_default();
 
+    // Start with base calculation
     let mut enemies_raw =
         cfg.spawn.base as i32 + cfg.spawn.alpha_pp_per_100 * pp_band + weather_delta;
+
+    // Apply weather aggression effect if config is available
+    if let Some(weather_config) = weather_config {
+        let agg_pct = weather_config.get_agg_pct(weather);
+        if agg_pct != 0 {
+            // Apply percentage as a multiplier: enemies_raw * (100 + agg_pct) / 100
+            enemies_raw = (enemies_raw * (100 + agg_pct)) / 100;
+        }
+    }
+
     enemies_raw = enemies_raw.max(0);
     let desired = enemies_raw as u32;
     let desired_clamped = desired.clamp(cfg.spawn.clamp_min, cfg.spawn.clamp_max);
@@ -234,5 +247,105 @@ mod tests {
         let tables = SpawnTypeTables::from_cfg(&cfg);
         let pick = choose_spawn_type(&tables, Weather::Clear, 0xDEAD_BEEF, 0);
         assert_eq!(pick, DEFAULT_SPAWN_KIND);
+    }
+
+    #[test]
+    fn agg_budget_delta() {
+        let mut cfg = DirectorCfg {
+            spawn: SpawnCfg {
+                base: 10,
+                alpha_pp_per_100: 0,
+                beta_weather: HashMap::new(),
+                growth_cap_per_leg: 10,
+                clamp_min: 1,
+                clamp_max: 100,
+            },
+            missions: HashMap::new(),
+            types: None,
+            weather_types: None,
+        };
+        let weather_config = WeatherConfig::default();
+        let pp = Pp(0);
+
+        // Test that different weather produces different spawn budgets due to aggression effects
+        let budget_clear =
+            compute_spawn_budget(pp, Weather::Clear, None, &cfg, Some(&weather_config));
+        let budget_fog = compute_spawn_budget(pp, Weather::Fog, None, &cfg, Some(&weather_config));
+        let budget_rains =
+            compute_spawn_budget(pp, Weather::Rains, None, &cfg, Some(&weather_config));
+
+        // Clear should have base value (0% effect) - unchanged
+        assert_eq!(budget_clear.enemies, 10);
+
+        // With percentage scaling, for small base values the effect might be minimal due to integer division
+        // Fog (8%) and Rains (5%) applied to base 10: base * (100 + pct) / 100
+        // Fog: 10 * 108 / 100 = 10 (with integer division)
+        // Rains: 10 * 105 / 100 = 10 (with integer division)
+        // So for small base values, the percentage effect might be 0 in integer math
+
+        // Fog has higher aggression than Rains
+        assert!(
+            budget_fog.enemies >= budget_rains.enemies,
+            "Fog should have higher or equal spawn budget than Rains"
+        );
+
+        // Test with a larger base value to see the percentage effect
+        cfg.spawn.base = 100;
+        let budget_clear_large =
+            compute_spawn_budget(pp, Weather::Clear, None, &cfg, Some(&weather_config));
+
+        // Clear should have base value (0% effect) - unchanged
+        assert_eq!(budget_clear_large.enemies, 100);
+
+        // Fog (8%): 100 * 108 / 100 = 108, but then clamped to cfg.spawn.clamp_max of 100
+        // Rains (5%): 100 * 105 / 100 = 105, but then clamped to cfg.spawn.clamp_max of 100
+        // So with current clamp_max of 100, both may be clamped to 100.
+        // Let's use higher clamp values to see the effect
+        let mut cfg_high_clamp = cfg;
+        cfg_high_clamp.spawn.clamp_max = 200; // Higher clamp to see actual effect
+
+        let budget_clear_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Clear,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+        let budget_fog_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Fog,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+        let budget_rains_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Rains,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+
+        // Clear should have base value (0% effect) - unchanged
+        assert_eq!(budget_clear_unclamped.enemies, 100);
+
+        // Fog (8%): 100 * 108 / 100 = 108
+        // Rains (5%): 100 * 105 / 100 = 105
+        assert_eq!(
+            budget_fog_unclamped.enemies, 108,
+            "Fog should increase spawn budget by 8%"
+        );
+        assert_eq!(
+            budget_rains_unclamped.enemies, 105,
+            "Rains should increase spawn budget by 5%"
+        );
+        assert!(
+            budget_fog_unclamped.enemies > budget_clear_unclamped.enemies,
+            "Fog weather should increase spawn budget"
+        );
+        assert!(
+            budget_rains_unclamped.enemies > budget_clear_unclamped.enemies,
+            "Rains weather should increase spawn budget"
+        );
     }
 }
