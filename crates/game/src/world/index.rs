@@ -257,7 +257,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
         let mut link_to_route_id = HashMap::new();
         let mut used_route_ids = std::collections::HashSet::new();
 
-        for (link_name, _) in &world_graph.links {
+        for link_name in world_graph.links.keys() {
             if link_name.starts_with('L') && link_name.len() >= 2 {
                 if let Ok(route_num) = link_name[1..].parse::<u16>() {
                     if route_num == 0 {
@@ -274,7 +274,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                     used_route_ids.insert(route_num);
 
                     let route_id = RouteId(route_num);
-                    link_to_route_id.insert(link_name, route_id);
+                    link_to_route_id.insert(link_name.clone(), route_id);
                 } else {
                     return Err(anyhow::anyhow!("invalid link name format: {}", link_name));
                 }
