@@ -33,7 +33,7 @@ pub fn get_drift_offset_mm(
 
             let timestamp = TIMESTAMP_COUNTER.fetch_add(1, Ordering::Relaxed);
             let _ = log_weather_state(&WeatherLogData {
-                route_id: route_id.unwrap_or(0),
+                route_id: _route_id.unwrap_or(0),
                 weather: format!("{:?}", weather),
                 los_m: config.get_los_m(weather),
                 drift_mm: drift_amount as u32,
@@ -80,7 +80,7 @@ pub fn get_drift_offset_mm(
 
         let timestamp = TIMESTAMP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let _ = log_weather_state(&WeatherLogData {
-            route_id: route_id.unwrap_or(0),
+            route_id: _route_id.unwrap_or(0),
             weather: format!("{:?}", weather),
             los_m: config.get_los_m(weather),
             drift_mm: drift_amount as u32,
