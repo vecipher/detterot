@@ -27,8 +27,8 @@ use systems::command_queue::CommandQueue;
 use systems::director::director_cfg_path;
 use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use systems::economy::{load_rulepack, Pp, RouteId, Rulepack, Weather};
-use systems::trading::TradingPlugin;
 use systems::gameplay::los::LOSPlugin;
+use systems::trading::TradingPlugin;
 use ui::hub_trade::HubTradePlugin;
 use ui::route_planner::RoutePlannerPlugin;
 
