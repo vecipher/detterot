@@ -11,7 +11,7 @@ struct BoardCacheKey {
     link_id: RouteId,
     world_seed: u64,
     econ_version: u32,
-    style: String,  // Using String instead of &str to make it owned
+    style: String, // Using String instead of &str to make it owned
     weather: Weather,
 }
 
@@ -76,7 +76,8 @@ impl BoardCache {
     /// since there may be multiple cached boards for the same link ID with different parameters
     pub fn get_board(&self, link_id: RouteId) -> Option<&Board> {
         // Find the first board with matching link ID
-        self.boards.iter()
+        self.boards
+            .iter()
             .find(|(key, _)| key.link_id == link_id)
             .map(|(_, cached)| &cached.board)
     }
@@ -85,13 +86,21 @@ impl BoardCache {
     /// since there may be multiple cached hashes for the same link ID with different parameters
     pub fn get_hash(&self, link_id: RouteId) -> Option<u64> {
         // Find the first hash with matching link ID
-        self.boards.iter()
+        self.boards
+            .iter()
             .find(|(key, _)| key.link_id == link_id)
             .map(|(_, cached)| cached.hash)
     }
-    
+
     /// Get board with exact parameters (if previously cached with those parameters)
-    pub fn get_board_exact(&self, link_id: RouteId, world_seed: u64, econ_version: u32, style: &str, weather: Weather) -> Option<&Board> {
+    pub fn get_board_exact(
+        &self,
+        link_id: RouteId,
+        world_seed: u64,
+        econ_version: u32,
+        style: &str,
+        weather: Weather,
+    ) -> Option<&Board> {
         let key = BoardCacheKey {
             link_id,
             world_seed,
@@ -103,7 +112,14 @@ impl BoardCache {
     }
 
     /// Get hash with exact parameters (if previously cached with those parameters)
-    pub fn get_hash_exact(&self, link_id: RouteId, world_seed: u64, econ_version: u32, style: &str, weather: Weather) -> Option<u64> {
+    pub fn get_hash_exact(
+        &self,
+        link_id: RouteId,
+        world_seed: u64,
+        econ_version: u32,
+        style: &str,
+        weather: Weather,
+    ) -> Option<u64> {
         let key = BoardCacheKey {
             link_id,
             world_seed,
@@ -182,14 +198,20 @@ mod tests {
         // Test that the fix works: same link_id but different parameters should generate different boards
         let (hash4, _) = cache.get_or_generate(12345, 1, link_id, "coast", Weather::Clear, &config);
         let (hash5, _) = cache.get_or_generate(12345, 1, link_id, "coast", Weather::Fog, &config);
-        
+
         // Different weather should produce different boards
-        assert_ne!(hash4, hash5, "Different weather should produce different boards");
-        
+        assert_ne!(
+            hash4, hash5,
+            "Different weather should produce different boards"
+        );
+
         // Test with different style
         let (hash6, _) = cache.get_or_generate(12345, 1, link_id, "ridge", Weather::Clear, &config);
-        assert_ne!(hash4, hash6, "Different styles should produce different boards");
-        
+        assert_ne!(
+            hash4, hash6,
+            "Different styles should produce different boards"
+        );
+
         // Verify the boards have proper structure (spawns, dims, etc.)
         let board = cache.get_board(link_id).unwrap();
         assert_eq!(board.dims.w, 64); // Standard board size
