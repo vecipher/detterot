@@ -38,8 +38,5 @@ fn neighbor_lists_are_bounded() {
     for hub in hubs {
         let neighbors = StaticWorldIndex::neighbors(hub);
         assert!(neighbors.len() <= 6);
-        for route in neighbors {
-            assert_ne!(route.0, 0);
-        }
     }
 }
