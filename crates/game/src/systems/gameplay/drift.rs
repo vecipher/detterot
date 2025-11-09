@@ -70,7 +70,7 @@ pub fn get_drift_offset_mm(
 
     // Generate a signed offset in the range [-drift_amount, drift_amount]
     let unsigned_offset = (rng.next_u32() % (drift_amount as u32 * 2 + 1)) as i32;
-    let signed_offset = unsigned_offset - drift_amount as i32;
+    let signed_offset = unsigned_offset - drift_amount;
 
     // Log the weather state
     #[cfg(feature = "m2_logs")]
