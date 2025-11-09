@@ -252,7 +252,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
 
             // Create a mapping from link names to RouteIds
             let mut link_to_route_id = HashMap::new();
-            
+
             for (i, (link_name, link_spec)) in sorted_links.into_iter().enumerate() {
                 let from_hub_id = hub_names
                     .get(&link_spec.from)
