@@ -35,7 +35,7 @@ fn load_route_closures() -> anyhow::Result<HashSet<RouteId>> {
         let closures: ClosuresConfig =
             toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
 
-        // Convert string IDs to RouteId
+        // Convert string IDs to RouteId - for legacy format compatibility
         let mut closed_routes = HashSet::new();
         for link_id in &closures.closed {
             if link_id.starts_with("L") && link_id.len() >= 3 {
@@ -77,6 +77,36 @@ impl WorldIndex for StaticWorldIndex {
 
     fn is_route_closed(route: RouteId) -> bool {
         ensure_loaded().closed_routes.contains(&route)
+    }
+}
+
+// Raw closure loading function for new graph format
+fn load_route_closures_raw() -> anyhow::Result<HashSet<String>> {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let primary = Path::new(manifest)
+        .join("..")
+        .join("..")
+        .join("assets/world/closures.toml");
+    let search_paths = [Path::new("assets/world/closures.toml"), primary.as_path()];
+
+    let mut closures_path = None;
+    for path in search_paths {
+        if path.exists() {
+            closures_path = Some(path.to_path_buf());
+            break;
+        }
+    }
+
+    if let Some(path) = closures_path {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        let closures: ClosuresConfig =
+            toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
+
+        // Return the raw string IDs without conversion
+        Ok(closures.closed.into_iter().collect())
+    } else {
+        Ok(HashSet::new()) // No closures file, return empty set
     }
 }
 
@@ -220,6 +250,9 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
             let mut sorted_links: Vec<(&String, &LinkSpec)> = world_graph.links.iter().collect();
             sorted_links.sort_by_key(|(name, _)| *name);
 
+            // Create a mapping from link names to RouteIds
+            let mut link_to_route_id = HashMap::new();
+            
             for (i, (link_name, link_spec)) in sorted_links.into_iter().enumerate() {
                 let from_hub_id = hub_names
                     .get(&link_spec.from)
@@ -229,6 +262,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                     .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.to))?;
 
                 let route_id = RouteId(i as u16);
+                link_to_route_id.insert(link_name, route_id);
 
                 neighbors.entry(*from_hub_id).or_default().push(route_id);
                 neighbors.entry(*to_hub_id).or_default().push(route_id);
@@ -238,8 +272,12 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                 route_weather.insert(route_id, weather);
             }
 
-            // Load route closures
-            let closed_routes = load_route_closures()?;
+            // Load route closures - convert link names to corresponding RouteIds
+            let original_closures = load_route_closures_raw()?;
+            let closed_routes = original_closures
+                .iter()
+                .filter_map(|link_name| link_to_route_id.get(link_name).copied())
+                .collect();
 
             // Ensure no hub has more than 6 neighbors
             for list in neighbors.values_mut() {
