@@ -169,7 +169,7 @@ impl Mission for WayleaveDefault {
             return None;
         }
         self.elapsed = self.elapsed.saturating_add(dt_ticks);
-        if self.elapsed % 40 == 0 && self.reached < self.checkpoints {
+        if self.elapsed.is_multiple_of(40) && self.reached < self.checkpoints {
             self.reached += 1;
         }
         if self.reached >= self.checkpoints {
