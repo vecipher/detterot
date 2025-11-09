@@ -218,27 +218,51 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
         let mut hub_names = HashMap::new();
         let mut hub_specs = HashMap::new();
 
-        // Sort hubs by their names to ensure deterministic HubId assignment
-        let mut sorted_hubs: Vec<(&String, &HubSpec)> = world_graph.hubs.iter().collect();
-        sorted_hubs.sort_by_key(|(name, _)| *name);
-
-        for (i, (hub_name, hub_spec)) in sorted_hubs.into_iter().enumerate() {
-            let hub_id = HubId(i as u16);
-            hub_names.insert(hub_name.clone(), hub_id);
-            hub_specs.insert(hub_id, hub_spec.clone());
+        // Parse hub IDs from names (e.g., "H01" -> 1, "H02" -> 2) to preserve stable IDs
+        for (hub_name, hub_spec) in &world_graph.hubs {
+            if hub_name.starts_with('H') && hub_name.len() >= 2 {
+                if let Ok(hub_num) = hub_name[1..].parse::<u16>() {
+                    let hub_id = HubId(hub_num);
+                    hub_names.insert(hub_name.clone(), hub_id);
+                    hub_specs.insert(hub_id, hub_spec.clone());
+                } else {
+                    return Err(anyhow::anyhow!("invalid hub name format: {}", hub_name));
+                }
+            } else {
+                return Err(anyhow::anyhow!(
+                    "hub name must start with 'H': {}",
+                    hub_name
+                ));
+            }
         }
 
         let mut neighbors: HashMap<HubId, SmallVec<[RouteId; 6]>> = HashMap::new();
         let mut route_weather = HashMap::new();
 
-        // Sort links by their names to ensure deterministic RouteId assignment
+        // Create a mapping from link names to RouteIds by parsing the numeric suffix (e.g., "L01" -> 1, "L02" -> 2)
+        let mut link_to_route_id = HashMap::new();
+
+        for (link_name, _) in &world_graph.links {
+            if link_name.starts_with('L') && link_name.len() >= 2 {
+                if let Ok(route_num) = link_name[1..].parse::<u16>() {
+                    let route_id = RouteId(route_num);
+                    link_to_route_id.insert(link_name, route_id);
+                } else {
+                    return Err(anyhow::anyhow!("invalid link name format: {}", link_name));
+                }
+            } else {
+                return Err(anyhow::anyhow!(
+                    "link name must start with 'L': {}",
+                    link_name
+                ));
+            }
+        }
+
+        // Process links in alphabetical order to ensure deterministic weather resolution and processing order
         let mut sorted_links: Vec<(&String, &LinkSpec)> = world_graph.links.iter().collect();
         sorted_links.sort_by_key(|(name, _)| *name);
 
-        // Create a mapping from link names to RouteIds
-        let mut link_to_route_id = HashMap::new();
-
-        for (i, (link_name, link_spec)) in sorted_links.into_iter().enumerate() {
+        for (link_name, link_spec) in sorted_links {
             let from_hub_id = hub_names
                 .get(&link_spec.from)
                 .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.from))?;
@@ -246,8 +270,7 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
                 .get(&link_spec.to)
                 .ok_or_else(|| anyhow::anyhow!("unknown hub in link: {}", link_spec.to))?;
 
-            let route_id = RouteId(i as u16);
-            link_to_route_id.insert(link_name, route_id);
+            let route_id = *link_to_route_id.get(link_name).unwrap();
 
             neighbors.entry(*from_hub_id).or_default().push(route_id);
             neighbors.entry(*to_hub_id).or_default().push(route_id);
