@@ -120,8 +120,9 @@ mod tests {
         // Fog drift should be zero per config
         assert_eq!(drift_fog, 0, "Fog drift should be 0 per config");
         
-        // Rains and Windy should have positive drift
-        assert!(drift_rains >= 0, "Rains drift should be >= 0");
-        assert!(drift_windy >= 0, "Windy drift should be >= 0");
+        // Rains and Windy should have drift in absolute terms (drift offset can be positive or negative)
+        // Check that the absolute value is reasonable and non-zero for active weather types
+        assert!(drift_rains.abs() > 0, "Rains should have non-zero drift offset (can be positive or negative)");
+        assert!(drift_windy.abs() > 0, "Windy should have non-zero drift offset (can be positive or negative)");
     }
 }

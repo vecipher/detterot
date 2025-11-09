@@ -28,6 +28,7 @@ use systems::director::director_cfg_path;
 use systems::director::{DirectorPlugin, DirectorState, LegContext, WheelState};
 use systems::economy::{load_rulepack, Pp, RouteId, Rulepack, Weather};
 use systems::trading::TradingPlugin;
+use systems::gameplay::los::LOSPlugin;
 use ui::hub_trade::HubTradePlugin;
 use ui::route_planner::RoutePlannerPlugin;
 
@@ -222,6 +223,7 @@ fn build_app(options: &CliOptions, context: LegContext) -> App {
         }
     }
     app.add_plugins(DirectorPlugin);
+    app.add_plugins(LOSPlugin);
     app
 }
 
