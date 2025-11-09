@@ -80,7 +80,7 @@ fn generate_walls(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Vec<Wall> {
     let wall_count = (rng.next_u32() % 7) + 6; // 6..=12
 
     for _ in 0..wall_count {
-        let is_horizontal = rng.next_u32().is_multiple_of(2);
+        let is_horizontal = rng.next_u32() % 2 == 0;
         let x = (rng.next_u32() as i32) % w as i32;
         let y = (rng.next_u32() as i32) % h as i32;
         let len = (rng.next_u32() % 8) + 3; // 3..=10
