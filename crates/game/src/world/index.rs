@@ -219,9 +219,23 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
         let mut hub_specs = HashMap::new();
 
         // Parse hub IDs from names (e.g., "H01" -> 1, "H02" -> 2) to preserve stable IDs
+        let mut used_hub_ids = std::collections::HashSet::new();
         for (hub_name, hub_spec) in &world_graph.hubs {
             if hub_name.starts_with('H') && hub_name.len() >= 2 {
                 if let Ok(hub_num) = hub_name[1..].parse::<u16>() {
+                    if hub_num == 0 {
+                        return Err(anyhow::anyhow!(
+                            "hub IDs must be greater than 0: {}",
+                            hub_name
+                        ));
+                    }
+
+                    // Check for duplicate hub IDs
+                    if used_hub_ids.contains(&hub_num) {
+                        return Err(anyhow::anyhow!("duplicate hub ID found: {}", hub_num));
+                    }
+                    used_hub_ids.insert(hub_num);
+
                     let hub_id = HubId(hub_num);
                     hub_names.insert(hub_name.clone(), hub_id);
                     hub_specs.insert(hub_id, hub_spec.clone());
@@ -241,10 +255,24 @@ fn load_world_graph_data() -> anyhow::Result<WorldGraphData> {
 
         // Create a mapping from link names to RouteIds by parsing the numeric suffix (e.g., "L01" -> 1, "L02" -> 2)
         let mut link_to_route_id = HashMap::new();
+        let mut used_route_ids = std::collections::HashSet::new();
 
         for (link_name, _) in &world_graph.links {
             if link_name.starts_with('L') && link_name.len() >= 2 {
                 if let Ok(route_num) = link_name[1..].parse::<u16>() {
+                    if route_num == 0 {
+                        return Err(anyhow::anyhow!(
+                            "route IDs must be greater than 0: {}",
+                            link_name
+                        ));
+                    }
+
+                    // Check for duplicate route IDs
+                    if used_route_ids.contains(&route_num) {
+                        return Err(anyhow::anyhow!("duplicate route ID found: {}", route_num));
+                    }
+                    used_route_ids.insert(route_num);
+
                     let route_id = RouteId(route_num);
                     link_to_route_id.insert(link_name, route_id);
                 } else {
