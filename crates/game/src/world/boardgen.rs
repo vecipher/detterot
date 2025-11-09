@@ -126,8 +126,8 @@ fn generate_cover(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Vec<Cover> {
     .max(10);
 
     for _ in 0..cover_count {
-        let x = 1 + ((rng.next_u32() as i32) % (w as i32 - 2)); // 1..w-1
-        let y = 1 + ((rng.next_u32() as i32) % (h as i32 - 2)); // 1..h-1
+        let x = 1 + ((rng.next_u32() % (w - 2)) as i32); // 1..w-1
+        let y = 1 + ((rng.next_u32() % (h - 2)) as i32); // 1..h-1
 
         // Random cover kind
         let kind = match rng.next_u32() % 3 {
@@ -148,8 +148,8 @@ fn generate_spawn_points(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> SpawnP
 
     for _ in 0..player_count {
         // Keep spawn points away from edges
-        let x = 2 + ((rng.next_u32() as i32) % (w as i32 - 4)); // 2..w-2
-        let y = 2 + ((rng.next_u32() as i32) % (h as i32 - 4)); // 2..h-2
+        let x = 2 + ((rng.next_u32() % (w - 4)) as i32); // 2..w-2
+        let y = 2 + ((rng.next_u32() % (h - 4)) as i32); // 2..h-2
 
         player.push(Point { x, y });
     }
@@ -159,8 +159,8 @@ fn generate_spawn_points(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> SpawnP
 
     for _ in 0..enemy_count {
         // Keep spawn points away from edges
-        let x = 2 + ((rng.next_u32() as i32) % (w as i32 - 4)); // 2..w-2
-        let y = 2 + ((rng.next_u32() as i32) % (h as i32 - 4)); // 2..h-2
+        let x = 2 + ((rng.next_u32() % (w - 4)) as i32); // 2..w-2
+        let y = 2 + ((rng.next_u32() % (h - 4)) as i32); // 2..h-2
 
         enemy.push(Point { x, y });
     }
@@ -180,8 +180,8 @@ fn generate_zones(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Zones {
         let h_size = 3 + (rng.next_u32() % 6); // 3-8
         let max_x = (w as i32 - w_size as i32 - 1).max(1);
         let max_y = (h as i32 - h_size as i32 - 1).max(1);
-        let x = 1 + ((rng.next_u32() as i32) % max_x);
-        let y = 1 + ((rng.next_u32() as i32) % max_y);
+        let x = 1 + ((rng.next_u32() % max_x as u32) as i32);
+        let y = 1 + ((rng.next_u32() % max_y as u32) as i32);
 
         hold.push(Rectangle {
             x,
@@ -198,8 +198,8 @@ fn generate_zones(rng: &mut Xoshiro256PlusPlus, w: u32, h: u32) -> Zones {
         let h_size = 4 + (rng.next_u32() % 7); // 4-10
         let max_x = (w as i32 - w_size as i32 - 1).max(1);
         let max_y = (h as i32 - h_size as i32 - 1).max(1);
-        let x = 1 + ((rng.next_u32() as i32) % max_x);
-        let y = 1 + ((rng.next_u32() as i32) % max_y);
+        let x = 1 + ((rng.next_u32() % max_x as u32) as i32);
+        let y = 1 + ((rng.next_u32() % max_y as u32) as i32);
 
         evac.push(Rectangle {
             x,
