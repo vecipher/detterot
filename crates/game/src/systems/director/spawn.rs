@@ -146,8 +146,8 @@ pub fn compute_spawn_budget(
     if let Some(weather_config) = weather_config {
         let agg_pct = weather_config.get_agg_pct(weather);
         if agg_pct != 0 {
-            // Apply additive percentage as an absolute number change
-            enemies_raw = enemies_raw.saturating_add(agg_pct);
+            // Apply percentage as a multiplier: enemies_raw * (100 + agg_pct) / 100
+            enemies_raw = (enemies_raw * (100 + agg_pct)) / 100;
         }
     }
 
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn agg_budget_delta() {
-        let cfg = DirectorCfg {
+        let mut cfg = DirectorCfg {
             spawn: SpawnCfg {
                 base: 10,
                 alpha_pp_per_100: 0,
@@ -274,31 +274,78 @@ mod tests {
         let budget_rains =
             compute_spawn_budget(pp, Weather::Rains, None, &cfg, Some(&weather_config));
 
-        // Clear should have base value (0% effect)
+        // Clear should have base value (0% effect) - unchanged
         assert_eq!(budget_clear.enemies, 10);
 
-        // Fog should have +8% effect = 10 + 0.8 = ~10 (rounded)
-        // Since it's an integer calculation, we check that fog has different value than clear if effects apply
-        // With the additive approach, Fog should add 8 enemies (8% of 100 base = 8)
-        // Actually, based on the implementation, it adds 8% as absolute value change
-        // So base 10 + 8 = 18 for fog
-
-        // Let's verify the calculation logic: fog adds 8 to base 10 = 18
-        // rains adds 5 to base 10 = 15
-        // clear adds 0 = 10
-        assert!(
-            budget_fog.enemies > budget_clear.enemies,
-            "Fog weather should increase spawn budget"
-        );
-        assert!(
-            budget_rains.enemies > budget_clear.enemies,
-            "Rains weather should increase spawn budget"
-        );
+        // With percentage scaling, for small base values the effect might be minimal due to integer division
+        // Fog (8%) and Rains (5%) applied to base 10: base * (100 + pct) / 100
+        // Fog: 10 * 108 / 100 = 10 (with integer division)
+        // Rains: 10 * 105 / 100 = 10 (with integer division)
+        // So for small base values, the percentage effect might be 0 in integer math
 
         // Fog has higher aggression than Rains
         assert!(
             budget_fog.enemies >= budget_rains.enemies,
             "Fog should have higher or equal spawn budget than Rains"
+        );
+
+        // Test with a larger base value to see the percentage effect
+        cfg.spawn.base = 100;
+        let budget_clear_large =
+            compute_spawn_budget(pp, Weather::Clear, None, &cfg, Some(&weather_config));
+
+        // Clear should have base value (0% effect) - unchanged
+        assert_eq!(budget_clear_large.enemies, 100);
+
+        // Fog (8%): 100 * 108 / 100 = 108, but then clamped to cfg.spawn.clamp_max of 100
+        // Rains (5%): 100 * 105 / 100 = 105, but then clamped to cfg.spawn.clamp_max of 100
+        // So with current clamp_max of 100, both may be clamped to 100.
+        // Let's use higher clamp values to see the effect
+        let mut cfg_high_clamp = cfg;
+        cfg_high_clamp.spawn.clamp_max = 200; // Higher clamp to see actual effect
+
+        let budget_clear_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Clear,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+        let budget_fog_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Fog,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+        let budget_rains_unclamped = compute_spawn_budget(
+            pp,
+            Weather::Rains,
+            None,
+            &cfg_high_clamp,
+            Some(&weather_config),
+        );
+
+        // Clear should have base value (0% effect) - unchanged
+        assert_eq!(budget_clear_unclamped.enemies, 100);
+
+        // Fog (8%): 100 * 108 / 100 = 108
+        // Rains (5%): 100 * 105 / 100 = 105
+        assert_eq!(
+            budget_fog_unclamped.enemies, 108,
+            "Fog should increase spawn budget by 8%"
+        );
+        assert_eq!(
+            budget_rains_unclamped.enemies, 105,
+            "Rains should increase spawn budget by 5%"
+        );
+        assert!(
+            budget_fog_unclamped.enemies > budget_clear_unclamped.enemies,
+            "Fog weather should increase spawn budget"
+        );
+        assert!(
+            budget_rains_unclamped.enemies > budget_clear_unclamped.enemies,
+            "Rains weather should increase spawn budget"
         );
     }
 }
