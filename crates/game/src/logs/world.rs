@@ -6,8 +6,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use anyhow::Context;
 use serde::Serialize;
 
-use crate::systems::economy::{RouteId, Weather};
-
 static LOGS_ENABLED: AtomicBool = AtomicBool::new(cfg!(feature = "m2_logs"));
 
 pub fn set_enabled(enabled: bool) {
@@ -35,7 +33,7 @@ fn append_jsonl<T: Serialize>(file: &str, value: &T) -> anyhow::Result<()> {
 #[derive(Serialize)]
 pub struct WeatherLogData {
     pub route_id: u16,
-    pub weather: &'static str,
+    pub weather: String,
     pub los_m: u32,
     pub drift_mm: u32,
     pub aggression_pct: i32,

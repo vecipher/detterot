@@ -36,7 +36,7 @@ pub fn get_los_distance_m(weather: Weather, config: &WeatherConfig, route_id: Op
         let timestamp = TIMESTAMP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let _ = log_weather_state(&WeatherLogData {
             route_id: route_id.unwrap_or(0),
-            weather: format!("{:?}", weather).as_str(),
+            weather: format!("{:?}", weather),
             los_m: distance,
             drift_mm: config.get_drift_mm(weather),
             aggression_pct: config.get_agg_pct(weather),
